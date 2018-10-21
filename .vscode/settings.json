@@ -1,0 +1,17 @@
+{
+	"files.associations": {
+		"vulkan.h": "c",
+		"array": "c",
+		"istream": "c",
+		"tuple": "c",
+		"utility": "c",
+		"stdlib.h": "c",
+		"xcb.h": "c",
+		"*.rh": "c",
+		"xiosbase": "c",
+		"log.h": "c",
+		"system_error": "c",
+		"xlocale": "c",
+		"vk_platform.h": "c"
+	}
+}

@@ -1,0 +1,16 @@
+.DS_Store
+build
+
+#win32 files
+vulkan.exe
+vulkan.ilk
+vulkan.pdb
+
+#mac files
+vulkan.app
+vulkan.bin
+libMoltenVK.dylib
+libopenvr_api.dylib
+
+#linux files
+vulkan

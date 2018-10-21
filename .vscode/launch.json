@@ -1,0 +1,40 @@
+{
+	// Use IntelliSense to learn about possible attributes.
+	// Hover to view descriptions of existing attributes.
+	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "(lldb) Launch",
+			"linux": {
+				"program": "${workspaceFolder}/vulkan",
+				"miDebuggerPath": "/usr/bin/gdb",
+				"MIMode": "gdb",
+			},
+			"windows": {
+				"program": "${workspaceFolder}/vulkan.exe",
+				"miDebuggerPath": "C:/Program Files/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/gdb.exe",
+				"MIMode": "gdb",
+			},
+			"osx":{
+				"program": "${workspaceFolder}/vulkan.app/Contents/MacOS/vulkan",
+				"MIMode": "lldb",
+			},
+			"type": "cppdbg",
+			"request": "launch",
+
+			"args": [],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}",
+			"environment": [],
+			"externalConsole": true,
+			"setupCommands": [
+				{
+					"description": "Enable pretty-printing for gdb",
+					"text": "-enable-pretty-printing",
+					"ignoreFailures": true
+				}
+			],
+		}
+	]
+}

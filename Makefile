@@ -45,7 +45,7 @@ OBJS = main.o log.o vr.o vulkan.o vulkan_helper.o version.o 3dmaths.o text.o
 CFLAGS = -Ideps/include -Ibuild
 VPATH = src build
 
-WIN_LIBS = c:/Windows/system32/vulkan-1.dll -luser32 -lwinmm -lgdi32
+WIN_LIBS = c:/Windows/system32/vulkan-1.dll openvr_api.dll -luser32 -lwinmm -lgdi32
 LIN_LIBS = -Ldeps/lin -lvulkan -lxcb
 MAC_LIBS = -Ldeps/mac -lMoltenVK -lopenvr_api -framework CoreVideo -framework QuartzCore -rpath . -framework Cocoa
 # replace -lxcb with -lX11 if using Xlib
@@ -82,7 +82,10 @@ libMoltenVK.dylib: deps/mac/libMoltenVK.dylib
 libopenvr_api.dylib: deps/mac/libopenvr_api.dylib
 	cp $< $@
 
-vulkan.exe: $(WIN_OBJS)
+openvr_api.dll: deps/win/openvr_api.dll
+	cp $< $@
+
+vulkan.exe: $(WIN_OBJS) openvr_api.dll
 	$(CC) $^ $(WIN_LIBS) -o $@
 
 vulkan: $(LIN_OBJS)

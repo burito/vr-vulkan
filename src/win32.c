@@ -22,15 +22,50 @@ freely, subject to the following restrictions:
 
 #include "log.h"
 
-#define VIDX 1280
-#define VIDY 800
 
 int vulkan_init(void);
 int vulkan_loop(float current_time);
 
 HINSTANCE hInst;
 HWND hWnd;
-int killme = 0;
+
+///////////////////////////////////////////////////////////////////////////////
+//////// Public Interface to the rest of the program
+///////////////////////////////////////////////////////////////////////////////
+
+#include "keyboard.h"
+
+int killme=0;
+int sys_width  = 1980;	/* dimensions of default screen */
+int sys_height = 1200;
+float sys_dpi = 1.0;
+int vid_width  = 1280;	/* dimensions of our part of the screen */
+int vid_height = 720;
+int mouse_x = 0;
+int mouse_y = 0;
+int mickey_x = 0;
+int mickey_y = 0;
+char mouse[] = {0,0,0,0,0,0,0,0};
+#define KEYMAX 512
+char keys[KEYMAX];
+
+int fullscreen = 0;
+int fullscreen_toggle = 0;
+
+const int sys_ticksecond = 1000;
+long long sys_time(void)
+{
+	return timeGetTime();
+}
+
+void shell_browser(char *url)
+{
+	ShellExecute(NULL, "open", url, NULL, NULL, SW_SHOWNORMAL);
+}
+///////////////////////////////////////////////////////////////////////////////
+//////// End Public Interface
+///////////////////////////////////////////////////////////////////////////////
+
 
 LRESULT CALLBACK WndProc(HWND hWndProc, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -78,7 +113,7 @@ int APIENTRY WinMain(HINSTANCE hCurrentInst, HINSTANCE hPrev,
 		log_fatal("RegisterClassEx()");
 		return 1;
 	}
-	RECT wr = {0, 0, VIDX, VIDY};
+	RECT wr = {0, 0, vid_width, vid_height};
 	AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);
 	hWnd = CreateWindowEx(0, winClassName, winClassName,
 		WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_SYSMENU, // WS_TILEDWINDOW, //|WS_CLIPSIBLINGS|WS_CLIPCHILDREN,
@@ -96,7 +131,7 @@ int APIENTRY WinMain(HINSTANCE hCurrentInst, HINSTANCE hPrev,
 	if( vulkan_init() )
 		killme = 1;
 
-	long last_time = timeGetTime();
+	long long last_time = sys_time();
 
 	MSG mesg;
 
@@ -113,9 +148,9 @@ int APIENTRY WinMain(HINSTANCE hCurrentInst, HINSTANCE hPrev,
 			}
 
 		}
-		long time_now = timeGetTime();
+		long long time_now = sys_time();
 
-		int ret = vulkan_loop( (time_now - last_time) * 0.001 );
+		int ret = vulkan_loop( (time_now - last_time) / (float)sys_ticksecond );
 		if(ret)killme = 1;
 //		SwapBuffers(hDC);
 		RedrawWindow(hWnd, NULL, NULL, RDW_INTERNALPAINT);

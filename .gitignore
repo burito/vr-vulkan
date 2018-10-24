@@ -5,6 +5,7 @@ build
 vulkan.exe
 vulkan.ilk
 vulkan.pdb
+openvr_api.dll
 
 #mac files
 vulkan.app

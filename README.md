@@ -5,8 +5,8 @@ This is a basic Vulkan Fragment Shader Window example, that compiles from the co
 
 Compiling (all OS's)
 --------------------
-    git clone git@github.com:burito/vulkan
-    cd vulkan
+    git clone git@github.com:burito/vr-vulkan
+    cd vr-vulkan
     make
 
 

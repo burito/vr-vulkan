@@ -17,10 +17,14 @@ Build Environment
 * Install [mingw-w64-install.exe](http://sourceforge.net/projects/mingw-w64/files/) 8.1.0-x86_64-posix-seh
 * Add its ```bin``` directory to your path
 * Install current GPU drivers
+	* Nvidia 416.34
 
 ### Linux
-* ```apt-get install build-essential```
+* ```apt-get install build-essential clang```
 * Install current GPU drivers
+	* ```add-apt-repository ppa:graphics-drivers/ppa```
+	* ```apt-get update```
+	* ```apt-get install nvidia-driver-410```
 
 ### MacOS
 

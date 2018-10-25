@@ -76,8 +76,8 @@ extern xcb_window_t window;
 #include "vert_spv.h"
 #include "frag_spv.h"
 
-#define VIDX 1280
-#define VIDY 800
+extern int vid_width;
+extern int vid_height;
 
 // required by MacOS
 //VkFormat pixel_format = VK_FORMAT_B8G8R8A8_SRGB;
@@ -319,7 +319,7 @@ int vulkan_init(void)
 	}
 
 	// create the swapchain
-	VkExtent2D vk_extent = {VIDX, VIDY};
+	VkExtent2D vk_extent = {vid_width, vid_height};
 	VkSwapchainCreateInfoKHR vkswapchaincrinf = {
 		VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,	// VkStructureType                  sType;
 		NULL,						// const void*                      pNext;
@@ -436,7 +436,7 @@ int vulkan_init(void)
 			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
 			NULL,
 			0,
-			vkrp, 1, &img_view[i], VIDX, VIDY, 1};
+			vkrp, 1, &img_view[i], vid_width, vid_height, 1};
 
 		result = vkCreateFramebuffer( device, &fb_crinf, NULL, &vkfb[i]);
 		if( result != VK_SUCCESS )
@@ -730,8 +730,8 @@ int vulkan_init(void)
 		VK_FALSE							// VkBool32                                   primitiveRestartEnable;		
 	};
 
-	VkViewport viewport = {0.0f,0.0f,(float)VIDX,(float)VIDY,0.0f,1.0f};
-	VkRect2D scissor = {{0,0},{VIDX,VIDY}};
+	VkViewport viewport = {0.0f,0.0f,(float)vid_width,(float)vid_height,0.0f,1.0f};
+	VkRect2D scissor = {{0,0},{vid_width,vid_height}};
 	VkPipelineViewportStateCreateInfo viewport_state_crinf = {
 		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,	// VkStructureType                       sType;
 		NULL,							// const void*                           pNext;
@@ -881,7 +881,7 @@ int vulkan_init(void)
 			NULL,						// const void*            pNext;
 			vkrp,						// VkRenderPass           renderPass;
 			vkfb[i],					// VkFramebuffer          framebuffer;
-			{{0,0},{VIDX,VIDY}},				// VkRect2D               renderArea;
+			{{0,0},{vid_width,vid_height}},				// VkRect2D               renderArea;
 			1,						// uint32_t               clearValueCount;
 			&clear_color					// const VkClearValue*    pClearValues;
 		};

@@ -172,7 +172,7 @@ $(MAC_CONTENTS)/MacOS/$(MAC_BUNDLE): $(MAC_BUNDLE).bin
 # end build the App Bundle
 
 clean:
-	@rm -rf build vulkan vulkan.exe vulkan.bin vulkan.app libMoltenVK.dylib 
+	@rm -rf build vulkan vulkan.exe vulkan.bin vulkan.app libMoltenVK.dylib openvr_api.dll
 
 # create the build directory
 $(shell	mkdir -p $(BUILD_DIR))

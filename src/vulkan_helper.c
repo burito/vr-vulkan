@@ -611,3 +611,44 @@ void vulkan_queueflags(VkQueueFlags flags)
 	if( flags & VK_QUEUE_PROTECTED_BIT )
 		log_info("VK_QUEUE_PROTECTED_BIT");
 }
+
+
+char* vulkan_physicaldevicetype(VkPhysicalDeviceType devicetype)
+{
+	switch(devicetype) {
+	case VK_PHYSICAL_DEVICE_TYPE_OTHER:
+		return "VK_PHYSICAL_DEVICE_TYPE_OTHER";
+	case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
+		return "VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU";
+	case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
+		return "VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU";
+	case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
+		return "VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU";
+	case VK_PHYSICAL_DEVICE_TYPE_CPU:
+		return "VK_PHYSICAL_DEVICE_TYPE_CPU";
+	case VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM:
+		return "VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM";
+	default:
+		return NULL;
+	}
+}
+
+
+char* vulkan_memoryheapflags(VkMemoryHeapFlagBits flags)
+{
+	int iflags = flags;
+	switch(iflags) {
+	case 0:
+		return "No flags";
+	case 1:
+		return "VK_MEMORY_HEAP_DEVICE_LOCAL_BIT";
+	case 2:
+		return "VK_MEMORY_HEAP_MULTI_INSTANCE_BIT";
+	case 3:
+		return "VK_MEMORY_HEAP_DEVICE_LOCAL_BIT & VK_MEMORY_HEAP_MULTI_INSTANCE_BIT";
+	case 0x7FFFFFFF:
+		return "VK_MEMORY_HEAP_FLAG_BITS_MAX_ENUM";
+	default:
+		return NULL;
+	}
+}

@@ -85,7 +85,7 @@ VkFormat pixel_format = VK_FORMAT_B8G8R8A8_UNORM;
 //VkFormat pixel_format = VK_FORMAT_R16G16B16A16_SFLOAT;
 //VkFormat pixel_format = VK_FORMAT_R64G64B64A64_UINT;
 
-static VkDevice vk_device;
+static VkDevice device;
 static VkSwapchainKHR swapchain;
 static VkRenderPass vkrp;
 static VkSemaphore sem_begin;
@@ -118,14 +118,14 @@ int vk_framebuffer(int x, int y)
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL// VkImageLayout            initialLayout;
 	};
 	VkImage image;
-	result = vkCreateImage(vk_device, &image_crinf, NULL, &image);
+	result = vkCreateImage(device, &image_crinf, NULL, &image);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkCreateImage = %s", i+1, vulkan_result(result));
 	}
 
 	VkMemoryRequirements mem_req;
-	vkGetImageMemoryRequirements(vk_device, image, &mem_req);
+	vkGetImageMemoryRequirements(device, image, &mem_req);
 
 	VkMemoryAllocateInfo alloc_info = {
 		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// VkStructureType    sType;
@@ -154,7 +154,7 @@ int vk_framebuffer(int x, int y)
 	};
 
 	VkImageView image_view;
-	result = vkCreateImageView(vk_device, &image_view_crinf, NULL, &image_view);
+	result = vkCreateImageView(device, &image_view_crinf, NULL, &image_view);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkCreateImageView = %s", i+1, vulkan_result(result));
@@ -172,12 +172,11 @@ int vk_framebuffer(int x, int y)
 		1						// uint32_t                    layers;
 	};
 	VkFramebuffer fb;
-	result = vkCreateFramebuffer(vk_device, &fb_crinf, NULL, &fb);
+	result = vkCreateFramebuffer(device, &fb_crinf, NULL, &fb);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkCreateFramebuffer = %s", i+1, vulkan_result(result));
 	}
-
 }
 
 
@@ -218,13 +217,24 @@ int vulkan_init(void)
 	}
 
 	int desired_device = 0;
+
 	for(int i=0; i<device_count; i++)
 	{
 		VkPhysicalDeviceProperties device_properties;
 		vkGetPhysicalDeviceProperties(vkpd[i], &device_properties);
-		log_info("device[%d] = \"%s\"", i, device_properties.deviceName);
-	}
+		char * dev_type = vulkan_physicaldevicetype(device_properties.deviceType);
+		log_info("device[%d] = \"%s\" - %s", i, device_properties.deviceName,
+				vulkan_physicaldevicetype(device_properties.deviceType));
+		VkPhysicalDeviceMemoryProperties pd_mem;
+		vkGetPhysicalDeviceMemoryProperties(vkpd[i], &pd_mem);
+		for(int j=0; j<pd_mem.memoryHeapCount; j++)
+			log_info("device[%d] = heap %d/%d = %dMb, %d:%s",
+				i, j+1, pd_mem.memoryHeapCount,
+				pd_mem.memoryHeaps[j].size / (1024*1024),
+				pd_mem.memoryHeaps[j].flags,
+				vulkan_memoryheapflags(pd_mem.memoryHeaps[j].flags));
 
+	}
 
 	uint32_t queuefamily_count = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(vkpd[desired_device], &queuefamily_count, NULL);
@@ -276,7 +286,7 @@ int vulkan_init(void)
 		vk_dext_str,				// const char* const*                 ppEnabledExtensionNames;
 		0					// const VkPhysicalDeviceFeatures*    pEnabledFeatures;
 	};
-	result = vkCreateDevice(vkpd[desired_device], &vkdci, 0, &vk_device);
+	result = vkCreateDevice(vkpd[desired_device], &vkdci, 0, &device);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkCreateDevice = %s", vulkan_result(result));
@@ -382,7 +392,7 @@ int vulkan_init(void)
 		return 1;
 	}
 
-	vkGetDeviceQueue(vk_device, desired_queuefamily, 0, &queue);
+	vkGetDeviceQueue(device, desired_queuefamily, 0, &queue);
 	log_debug("vkGetDeviceQueue");
 
 	// create the two semaphores for syncing the swapchain
@@ -391,12 +401,12 @@ int vulkan_init(void)
 		NULL,						// const void*               pNext;
 		0						// VkSemaphoreCreateFlags    flags;
 	};
-	result = vkCreateSemaphore(vk_device, &vksemcrinf, 0, &sem_begin);
+	result = vkCreateSemaphore(device, &vksemcrinf, 0, &sem_begin);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkCreateSemaphore1 = %s", vulkan_result(result));
 	}
-	result = vkCreateSemaphore(vk_device, &vksemcrinf, 0, &sem_end);
+	result = vkCreateSemaphore(device, &vksemcrinf, 0, &sem_end);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkCreateSemaphore2 = %s", vulkan_result(result));
@@ -424,13 +434,11 @@ int vulkan_init(void)
 		VK_TRUE,					// VkBool32                         clipped;
 		NULL						// VkSwapchainKHR                   oldSwapchain;
 	};
-	result = vkCreateSwapchainKHR(vk_device, &vkswapchaincrinf, 0, &swapchain);
+	result = vkCreateSwapchainKHR(device, &vkswapchaincrinf, 0, &swapchain);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkCreateSwapchainKHR = %s", vulkan_result(result));
 	}
-
-
 
 	// create renderpass
 	VkAttachmentDescription attach_desc[] = {{
@@ -475,25 +483,23 @@ int vulkan_init(void)
 		NULL						// const VkSubpassDependency*        pDependencies;
 	};
 
-	result = vkCreateRenderPass(vk_device, &render_pass_crinf, NULL, &vkrp );
+
+	result = vkCreateRenderPass(device, &render_pass_crinf, NULL, &vkrp );
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkCreateRenderPass = %s", vulkan_result(result));
 	}
 
-
 	// create the swapchain framebuffers
-
 	display_buffer_count = 2;
 	VkImage vkimg[2];
-	result = vkGetSwapchainImagesKHR(vk_device, swapchain, &display_buffer_count, vkimg);
+	result = vkGetSwapchainImagesKHR(device, swapchain, &display_buffer_count, vkimg);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkGetSwapchainImagesKHR = %s", vulkan_result(result));
 	}
 	VkImageView img_view[2];
 	VkFramebuffer vkfb[2];
-
 
 	for( int i=0; i<display_buffer_count; i++)
 	{
@@ -511,7 +517,7 @@ int vulkan_init(void)
 			{ VK_IMAGE_ASPECT_COLOR_BIT,0,1,0,1 }
 		};
 
-		result = vkCreateImageView(vk_device, &image_view_crinf, NULL, &img_view[i]);
+		result = vkCreateImageView(device, &image_view_crinf, NULL, &img_view[i]);
 		if( result != VK_SUCCESS )
 		{
 			log_warning("vkCreateImageView(%d) = %s", i+1, vulkan_result(result));
@@ -529,7 +535,7 @@ int vulkan_init(void)
 			1						// uint32_t                    layers;
 		};
 
-		result = vkCreateFramebuffer(vk_device, &fb_crinf, NULL, &vkfb[i]);
+		result = vkCreateFramebuffer(device, &fb_crinf, NULL, &vkfb[i]);
 		if( result != VK_SUCCESS )
 		{
 			log_warning("vkCreateFramebuffer(%d) = %s", i+1, vulkan_result(result));
@@ -544,7 +550,7 @@ int vulkan_init(void)
 		0						// uint32_t                    queueFamilyIndex;
 	};
 	VkCommandPool vkpool;
-	result = vkCreateCommandPool(vk_device, &vk_cmdpoolcrinf, 0, &vkpool);
+	result = vkCreateCommandPool(device, &vk_cmdpoolcrinf, 0, &vkpool);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkCreateCommandPool = %s", vulkan_result(result));
@@ -557,7 +563,7 @@ int vulkan_init(void)
 		VK_COMMAND_BUFFER_LEVEL_PRIMARY,		// VkCommandBufferLevel    level;
 		2						// uint32_t                commandBufferCount;
 	};
-	result = vkAllocateCommandBuffers(vk_device, &vk_cmdbufallocinf, command_buffers);
+	result = vkAllocateCommandBuffers(device, &vk_cmdbufallocinf, command_buffers);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkAllocateCommandBuffers = %s", vulkan_result(result));
@@ -583,12 +589,12 @@ int vulkan_init(void)
 		(const uint32_t*)build_frag_spv			// const uint32_t*              pCode;
 	};
 
-	vkCreateShaderModule(vk_device, &shader_vert_crinf, NULL, &shader_module_vert);
+	vkCreateShaderModule(device, &shader_vert_crinf, NULL, &shader_module_vert);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkCreateShaderModule(vertex) = %s", vulkan_result(result));
 	}
-	vkCreateShaderModule(vk_device, &shader_frag_crinf, NULL, &shader_module_frag);
+	vkCreateShaderModule(device, &shader_frag_crinf, NULL, &shader_module_frag);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkCreateShaderModule(fragment) = %s", vulkan_result(result));
@@ -622,7 +628,7 @@ int vulkan_init(void)
 
 
 	VkBuffer ubo_buffer_client;    // Client side buffer
-	result = vkCreateBuffer(vk_device, &ubo_buffer_client_crinf, NULL, &ubo_buffer_client);
+	result = vkCreateBuffer(device, &ubo_buffer_client_crinf, NULL, &ubo_buffer_client);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkCreateBuffer = %s", vulkan_result(result));
@@ -631,7 +637,7 @@ int vulkan_init(void)
 	VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 	int client_memory_type = 0;
 	VkMemoryRequirements vk_memreq;
-	vkGetBufferMemoryRequirements(vk_device, ubo_buffer_client, &vk_memreq);
+	vkGetBufferMemoryRequirements(device, ubo_buffer_client, &vk_memreq);
 	VkPhysicalDeviceMemoryProperties vkpdmp;
 	vkGetPhysicalDeviceMemoryProperties(vkpd[desired_device], &vkpdmp);
 	for(int i=0; i<vkpdmp.memoryTypeCount; i++)
@@ -652,19 +658,19 @@ int vulkan_init(void)
 		ubo_buffer_size,			// VkDeviceSize       allocationSize;
 		client_memory_type			// uint32_t           memoryTypeIndex;
 	};
-	result = vkAllocateMemory(vk_device, &ubo_buffer_client_alloc_info, NULL, &ubo_client);
+	result = vkAllocateMemory(device, &ubo_buffer_client_alloc_info, NULL, &ubo_client);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkAllocateMemory = %s", vulkan_result(result));
 	}
-	result = vkBindBufferMemory(vk_device, ubo_buffer_client, ubo_client, 0);
+	result = vkBindBufferMemory(device, ubo_buffer_client, ubo_client, 0);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkBindBufferMemory = %s", vulkan_result(result));
 	}
 
 	VkBuffer ubo_buffer_host;    // host side buffer
-	result = vkCreateBuffer(vk_device, &ubo_buffer_host_crinf, NULL, &ubo_buffer_host);
+	result = vkCreateBuffer(device, &ubo_buffer_host_crinf, NULL, &ubo_buffer_host);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkCreateBuffer = %s", vulkan_result(result));
@@ -672,7 +678,7 @@ int vulkan_init(void)
 
 	// for the host buffer
 	wanted = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-	vkGetBufferMemoryRequirements(vk_device, ubo_buffer_host, &vk_memreq);
+	vkGetBufferMemoryRequirements(device, ubo_buffer_host, &vk_memreq);
 	int host_memory_type = 0;
 	for(int i=0; i<vkpdmp.memoryTypeCount; i++)
 	{
@@ -692,12 +698,12 @@ int vulkan_init(void)
 		host_memory_type			// uint32_t           memoryTypeIndex;
 	};
 	VkDeviceMemory ubo_buffer_host_mem;
-	result = vkAllocateMemory(vk_device, &ubo_buffer_host_alloc_info, NULL, &ubo_buffer_host_mem);
+	result = vkAllocateMemory(device, &ubo_buffer_host_alloc_info, NULL, &ubo_buffer_host_mem);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkAllocateMemory = %s", vulkan_result(result));
 	}
-	result = vkBindBufferMemory(vk_device, ubo_buffer_host, ubo_buffer_host_mem, 0);
+	result = vkBindBufferMemory(device, ubo_buffer_host, ubo_buffer_host_mem, 0);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkBindBufferMemory = %s", vulkan_result(result));
@@ -719,7 +725,7 @@ int vulkan_init(void)
 	};
 
 	VkDescriptorPool desc_pool;
-	result = vkCreateDescriptorPool(vk_device, &desc_pool_crinf, NULL, &desc_pool);
+	result = vkCreateDescriptorPool(device, &desc_pool_crinf, NULL, &desc_pool);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkCreateDescriptorPool = %s", vulkan_result(result));
@@ -742,7 +748,7 @@ int vulkan_init(void)
 	};
 
 	VkDescriptorSetLayout vk_ubo_layout[1];
-	result = vkCreateDescriptorSetLayout(vk_device, &descriptor_layout_crinf, NULL, &vk_ubo_layout[0]);
+	result = vkCreateDescriptorSetLayout(device, &descriptor_layout_crinf, NULL, &vk_ubo_layout[0]);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkCreateDescriptorSetLayout = %s", vulkan_result(result));
@@ -757,7 +763,7 @@ int vulkan_init(void)
 	};
 
 	VkDescriptorSet desc_set;
-	result = vkAllocateDescriptorSets(vk_device, &desc_set_alloc_info, &desc_set);
+	result = vkAllocateDescriptorSets(device, &desc_set_alloc_info, &desc_set);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkAllocateDescriptorSets = %s", vulkan_result(result));
@@ -776,7 +782,7 @@ int vulkan_init(void)
 		&desc_buf_info,				// const VkDescriptorBufferInfo*    pBufferInfo;
 		NULL					// const VkBufferView*              pTexelBufferView;
 	};
-	vkUpdateDescriptorSets(vk_device, 1, &desc_write_set, 0, NULL);
+	vkUpdateDescriptorSets(device, 1, &desc_write_set, 0, NULL);
 	log_debug("vkUpdateDescriptorSets");
 
 // create the pipeline
@@ -899,7 +905,7 @@ int vulkan_init(void)
 		NULL						// const VkPushConstantRange*      pPushConstantRanges;
 	};
 	VkPipelineLayout pipeline_layout;
-	result = vkCreatePipelineLayout(vk_device, &layout_crinf, NULL, &pipeline_layout);
+	result = vkCreatePipelineLayout(device, &layout_crinf, NULL, &pipeline_layout);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkCreatePipelineLayout = %s", vulkan_result(result));
@@ -927,7 +933,7 @@ int vulkan_init(void)
 		-1							// int32_t                                          basePipelineIndex;
 	};
 	VkPipeline vkpipe;
-	result = vkCreateGraphicsPipelines(vk_device, VK_NULL_HANDLE, 1, &pipeline_crinf, NULL, &vkpipe);
+	result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipeline_crinf, NULL, &vkpipe);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkCreateGraphicsPipelines = %s", vulkan_result(result));
@@ -1038,7 +1044,7 @@ int vulkan_loop(float current_time)
 	log_trace("frame time = %f", current_time);
 	uint32_t next_image = 0;
 	VkResult result;
-	result = vkAcquireNextImageKHR(vk_device, swapchain, 10000000, sem_begin, VK_NULL_HANDLE, &next_image);
+	result = vkAcquireNextImageKHR(device, swapchain, 10000000, sem_begin, VK_NULL_HANDLE, &next_image);
 	if(result != VK_SUCCESS)
 	{
 		log_warning("vkAcquireNextImageKHR = %s", vulkan_result(result));
@@ -1051,13 +1057,13 @@ int vulkan_loop(float current_time)
 		}
 	}
 	float * data;
-	result = vkMapMemory(vk_device, ubo_client, 0, sizeof(float), 0, (void**)&data);
+	result = vkMapMemory(device, ubo_client, 0, sizeof(float), 0, (void**)&data);
 	if(result != VK_SUCCESS)
 	{
 		log_warning("vkMapMemory = %s", vulkan_result(result));
 	}
 	data[0] = current_time;
-	vkUnmapMemory(vk_device, ubo_client);
+	vkUnmapMemory(device, ubo_client);
 
 	VkPipelineStageFlags vkflags = VK_PIPELINE_STAGE_TRANSFER_BIT;
 	VkSubmitInfo submit_info = {

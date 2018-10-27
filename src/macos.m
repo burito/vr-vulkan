@@ -20,7 +20,7 @@ void main_end(void);
 int killme=0;
 int sys_width  = 1980;	/* dimensions of default screen */
 int sys_height = 1200;
-float sys_dpi = 1.0;
+float sys_dpi = 0.5;
 int vid_width  = 1280;	/* dimensions of our part of the screen */
 int vid_height = 720;
 int mouse_x = 0;

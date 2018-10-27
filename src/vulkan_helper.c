@@ -652,3 +652,25 @@ char* vulkan_memoryheapflags(VkMemoryHeapFlagBits flags)
 		return NULL;
 	}
 }
+
+void vulkan_memorypropertyflags(VkMemoryPropertyFlags flags)
+{
+	if( flags == VK_MEMORY_PROPERTY_FLAG_BITS_MAX_ENUM )
+	{
+		log_info("VK_MEMORY_PROPERTY_FLAG_BITS_MAX_ENUM");
+		return;
+	}
+	if(flags & VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+		log_info("VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT");
+	if(flags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+		log_info("VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT");
+	if(flags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+		log_info("VK_MEMORY_PROPERTY_HOST_COHERENT_BIT");
+	if(flags & VK_MEMORY_PROPERTY_HOST_CACHED_BIT)
+		log_info("VK_MEMORY_PROPERTY_HOST_CACHED_BIT");
+	if(flags & VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT)
+		log_info("VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT");
+	if(flags & VK_MEMORY_PROPERTY_PROTECTED_BIT)
+		log_info("VK_MEMORY_PROPERTY_PROTECTED_BIT");
+}
+

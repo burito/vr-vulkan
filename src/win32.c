@@ -23,8 +23,7 @@ freely, subject to the following restrictions:
 #include "log.h"
 
 
-int vulkan_init(void);
-int vulkan_loop(float current_time);
+
 
 HINSTANCE hInst;
 HWND hWnd;
@@ -69,6 +68,7 @@ void shell_browser(char *url)
 
 LRESULT CALLBACK WndProc(HWND hWndProc, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	int bit = 0; int code;
 	switch(uMsg) {
 	case WM_DESTROY:
 		DestroyWindow(hWndProc);
@@ -80,6 +80,16 @@ LRESULT CALLBACK WndProc(HWND hWndProc, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_CLOSE:
 		killme = 1;
 		return 0;
+
+	case WM_KEYDOWN:
+		bit = 1;
+	case WM_KEYUP:
+		code = (HIWORD(lParam)) & 511;
+		if(code < KEYMAX)keys[code]=bit;
+		if(code == KEY_F11 && bit == 0)
+			fullscreen_toggle = 1;
+		return 0;
+
 	}
 	return DefWindowProc(hWndProc, uMsg, wParam, lParam);
 }
@@ -128,7 +138,7 @@ int APIENTRY WinMain(HINSTANCE hCurrentInst, HINSTANCE hPrev,
 		return 2;
 	}
 
-	if( vulkan_init() )
+	if( main_init() )
 		killme = 1;
 
 	long long last_time = sys_time();
@@ -148,10 +158,8 @@ int APIENTRY WinMain(HINSTANCE hCurrentInst, HINSTANCE hPrev,
 			}
 
 		}
-		long long time_now = sys_time();
 
-		int ret = vulkan_loop( (time_now - last_time) / (float)sys_ticksecond );
-		if(ret)killme = 1;
+		main_loop();
 //		SwapBuffers(hDC);
 		RedrawWindow(hWnd, NULL, NULL, RDW_INTERNALPAINT);
 	}

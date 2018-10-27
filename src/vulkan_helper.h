@@ -24,3 +24,4 @@ char* vulkan_result(VkResult result);
 void vulkan_queueflags(VkQueueFlags flags);
 char* vulkan_physicaldevicetype(VkPhysicalDeviceType devicetype);
 char* vulkan_memoryheapflags(VkMemoryHeapFlagBits flags);
+void vulkan_memorypropertyflags(VkMemoryPropertyFlags flags);

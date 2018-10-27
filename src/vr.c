@@ -323,55 +323,6 @@ void ovr_render(mat4x4 pos, mat4x4 proj)
 }
 
 
-//-----------------------------------------------------------------------------
-// Purpose: Creates a frame buffer. Returns true if the buffer was set up.
-//          Returns false if the setup failed.
-//-----------------------------------------------------------------------------
-bool CreateFrameBuffer( int nWidth, int nHeight, struct FramebufferDesc *framebufferDesc )
-{
-/*
-	glGenFramebuffers(1, &framebufferDesc->m_nRenderFramebufferId );
-	glBindFramebuffer(GL_FRAMEBUFFER, framebufferDesc->m_nRenderFramebufferId);
-
-	glGenRenderbuffers(1, &framebufferDesc->m_nDepthBufferId);
-	glBindRenderbuffer(GL_RENDERBUFFER, framebufferDesc->m_nDepthBufferId);
-	glRenderbufferStorageMultisample(GL_RENDERBUFFER, 4, GL_DEPTH_COMPONENT, nWidth, nHeight );
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER,	framebufferDesc->m_nDepthBufferId );
-
-	glGenTextures(1, &framebufferDesc->m_nRenderTextureId );
-	glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, framebufferDesc->m_nRenderTextureId );
-	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA8, nWidth, nHeight, GL_TRUE);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, framebufferDesc->m_nRenderTextureId, 0);
-
-	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	if (status != GL_FRAMEBUFFER_COMPLETE)
-	{
-		log_fatal("framebuffer1 creation failed: %s", glErrorFb(status));
-		return 1;
-	}
-
-	glGenFramebuffers(1, &framebufferDesc->m_nResolveFramebufferId );
-	glBindFramebuffer(GL_FRAMEBUFFER, framebufferDesc->m_nResolveFramebufferId);
-
-	glGenTextures(1, &framebufferDesc->m_nResolveTextureId );
-	glBindTexture(GL_TEXTURE_2D, framebufferDesc->m_nResolveTextureId );
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, nWidth, nHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, framebufferDesc->m_nResolveTextureId, 0);
-
-	// check FBO status
-	status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	if (status != GL_FRAMEBUFFER_COMPLETE)
-	{
-		log_fatal("framebuffer2 creation failed");
-		return 1;
-	}
-
-	glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-*/
-	return 0;
-}
 
 void hmd_eye_calc(EVREye eye, mat4x4 * dest_pose, mat4x4 *dest_proj)
 {
@@ -434,8 +385,6 @@ int vr_init(void)
 		return 2;
 	}
 
-	return 0;
-#ifdef NOT_NOW
 	// Get hmd position matrices
 	hmd_eye_calc(EVREye_Eye_Left, &eye_left, &eye_left_proj);
 	hmd_eye_calc(EVREye_Eye_Right, &eye_right, &eye_right_proj);
@@ -451,12 +400,14 @@ int vr_init(void)
 		log_warning("Display is NOT on desktop");
 */
 
-	if(!leftEyeDesc.m_nDepthBufferId)
+//	if(!leftEyeDesc.m_nDepthBufferId)
 	{
 		OVR->GetRecommendedRenderTargetSize( &m_nRenderWidth, &m_nRenderHeight );
-		CreateFrameBuffer( m_nRenderWidth, m_nRenderHeight, &leftEyeDesc );
-		CreateFrameBuffer( m_nRenderWidth, m_nRenderHeight, &rightEyeDesc );
+		vk_framebuffer( m_nRenderWidth, m_nRenderHeight);
+		vk_framebuffer( m_nRenderWidth, m_nRenderHeight);
 	}
+	return 0;
+#ifdef NOT_NOW
 
 	if(!eye_prog) eye_prog = shader_load(
 			"data/shaders/window.vert",

@@ -126,12 +126,18 @@ int vk_framebuffer(int x, int y)
 
 	VkMemoryRequirements mem_req;
 	vkGetImageMemoryRequirements(device, image, &mem_req);
+	log_warning("mem = %d", mem_req.memoryTypeBits);
+
+// TODO: have to search through the VkPhysicalDeviceMemoryProperties.memoryTypes[index].propertyFlags
+// for an index that is a set bit in memoryTypeBits, and also has the right propertyFlags that we want
+// so we can give that index to memoryTypeIndex in the VkMemoryAllocateInfo structure below
+// 7 is correct on my current GPU, on this current version of the drivers.
 
 	VkMemoryAllocateInfo alloc_info = {
 		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// VkStructureType    sType;
 		NULL,					// const void*        pNext;
 		mem_req.size,				// VkDeviceSize       allocationSize;
-		0					// uint32_t           memoryTypeIndex;
+		7					// uint32_t           memoryTypeIndex;
 	};
 
 	VkDeviceMemory dev_mem;
@@ -184,6 +190,7 @@ int vk_framebuffer(int x, int y)
 	{
 		log_warning("vkCreateFramebuffer = %s", vulkan_result(result));
 	}
+	return 0;
 }
 
 
@@ -240,6 +247,15 @@ int vulkan_init(void)
 				pd_mem.memoryHeaps[j].size / (1024*1024),
 				pd_mem.memoryHeaps[j].flags,
 				vulkan_memoryheapflags(pd_mem.memoryHeaps[j].flags));
+
+		for(int j=0; j<pd_mem.memoryTypeCount; j++)
+		{
+			log_info("device[%d] = memtype %d/%d = %d, %d",
+				i, j+1, pd_mem.memoryTypeCount,
+				pd_mem.memoryTypes[j].heapIndex,
+				pd_mem.memoryTypes[j].propertyFlags);
+			vulkan_memorypropertyflags(pd_mem.memoryTypes[j].propertyFlags);
+		}
 
 	}
 

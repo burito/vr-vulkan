@@ -33,10 +33,10 @@ freely, subject to the following restrictions:
 
 #include "vr.h"
 
-
+int vulkan_init(void);
+int vulkan_loop(float current_time);
 
 long long time_start = 0;
-float time = 0;
 
 float step = 0.0f;
 
@@ -65,6 +65,7 @@ int main_init(int argc, char *argv[])
 	shader_uniform(shader, "world");
 	shader_uniform(shader, "camera");
 */
+	vulkan_init();
 //	vr_init();
 
 	return 0;   // it worked!
@@ -139,12 +140,12 @@ void main_loop(void)
 	if(keys[KEY_F12])
 	{
 		keys[KEY_F12] = 0;
-//		log_info("toggle VR");
+		log_info("toggle VR");
 		if(!vr_using)vr_init();
 		else vr_end();
 	}
 
-	time = (float)(sys_time() - time_start)/(float)sys_ticksecond;
+	vulkan_loop( (sys_time() - time_start) / (float)sys_ticksecond );
 
 }
 

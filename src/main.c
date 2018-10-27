@@ -65,7 +65,7 @@ int main_init(int argc, char *argv[])
 	shader_uniform(shader, "world");
 	shader_uniform(shader, "camera");
 */
-	vr_init();
+//	vr_init();
 
 	return 0;   // it worked!
 }

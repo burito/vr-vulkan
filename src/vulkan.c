@@ -302,6 +302,7 @@ int vulkan_init(void)
 	vkGetDeviceQueue(device, desired_queuefamily, 0, &queue);
 	log_debug("vkGetDeviceQueue");
 
+	// create the two semaphores for syncing the swapchain
 	VkSemaphoreCreateInfo vksemcrinf = {
 		VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,	// VkStructureType           sType;
 		NULL,						// const void*               pNext;
@@ -346,13 +347,6 @@ int vulkan_init(void)
 		log_warning("vkCreateSwapchainKHR = %s", vulkan_result(result));
 	}
 
-	display_buffer_count = 2;
-	VkImage vkimg[2];
-	result = vkGetSwapchainImagesKHR(device, swapchain, &display_buffer_count, vkimg);
-	if( result != VK_SUCCESS )
-	{
-		log_warning("vkGetSwapchainImagesKHR = %s", vulkan_result(result));
-	}
 
 
 	// create renderpass
@@ -405,11 +399,20 @@ int vulkan_init(void)
 		log_warning("vkCreateRenderPass = %s", vulkan_result(result));
 	}
 
+
+	// create the swapchain framebuffers
+
+	display_buffer_count = 2;
+	VkImage vkimg[2];
+	result = vkGetSwapchainImagesKHR(device, swapchain, &display_buffer_count, vkimg);
+	if( result != VK_SUCCESS )
+	{
+		log_warning("vkGetSwapchainImagesKHR = %s", vulkan_result(result));
+	}
 	VkImageView img_view[2];
 	VkFramebuffer vkfb[2];
 
 
-	// create the framebuffers
 	for( int i=0; i<display_buffer_count; i++)
 	{
 		VkImageViewCreateInfo image_view_crinf = {

@@ -385,26 +385,27 @@ void hmd_eye_calc(EVREye eye, mat4x4 * dest_pose, mat4x4 *dest_proj)
 }
 
 
-void vr_init(void)
+int vr_init(void)
 {
 	EVRInitError eError;
 
 	if( !VR_IsHmdPresent() )
 	{
 		log_warning("VR Headset is not present");
+		return 1;
 	}
 	
 	if( !VR_IsRuntimeInstalled() )
 	{
 		log_warning("VR Runtime is not installed");
-		return;
+		return 1;
 	}
 	
 	uint32_t vrToken = VR_InitInternal(&eError, EVRApplicationType_VRApplication_Scene);
 	if (eError != EVRInitError_VRInitError_None)
 	{
 		log_fatal("VR_InitInternal: %s", VR_GetVRInitErrorAsSymbol(eError));
-		return;
+		return 2;
 	}
 
 	char fnTableName[128];
@@ -414,7 +415,7 @@ void vr_init(void)
 	if (eError != EVRInitError_VRInitError_None)
 	{
 		log_fatal("VR_GetGenericInterface(\"%s\"): %s", IVRSystem_Version, VR_GetVRInitErrorAsSymbol(eError));
-		return;
+		return 2;
 	}
 
 	result1 = sprintf(fnTableName, "FnTable:%s", IVRCompositor_Version);
@@ -422,7 +423,7 @@ void vr_init(void)
 	if (eError != EVRInitError_VRInitError_None)
 	{
 		log_fatal("VR_GetGenericInterface(\"%s\"): %s", IVRCompositor_Version, VR_GetVRInitErrorAsSymbol(eError));
-		return;
+		return 2;
 	}
 
 	result1 = sprintf(fnTableName, "FnTable:%s", IVRRenderModels_Version);
@@ -430,10 +431,10 @@ void vr_init(void)
 	if (eError != EVRInitError_VRInitError_None)
 	{
 		log_fatal("VR_GetGenericInterface(\"%s\"): %s", IVRRenderModels_Version, VR_GetVRInitErrorAsSymbol(eError));
-		return;
+		return 2;
 	}
 
-	return;
+	return 0;
 #ifdef NOT_NOW
 	// Get hmd position matrices
 	hmd_eye_calc(EVREye_Eye_Left, &eye_left, &eye_left_proj);

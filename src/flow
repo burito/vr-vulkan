@@ -1,0 +1,205 @@
+
+
+
+vulkan
+	physical device
+		surface
+		device queue
+		swapchain
+
+		renderpass
+
+		semaphore x2
+
+		framebuffer x2
+
+		command pool
+		command buffers x2
+
+		shader module (vertex)
+		shader module (fragment)
+		uniform buffer
+		host buffer (for uniform buffer transfer)
+		descriptor pool
+		descriptor set (for uniform buffer)
+
+		pipeline layout
+		graphics pipeline
+
+populate command buffers {
+	vkBeginCommandBuffer
+	vkCmdCopyBuffer
+	vkCmdPipelineBarrier
+	vkCmdBeginRenderPass
+	vkCmdBindPipeline
+	vkCmdBindDescriptorSets
+	vkCmdDraw
+	vkCmdEndRenderPass
+	vkCmdPipelineBarrier
+	vkEndCommandBuffer
+}
+
+render loop {
+	vkAcquireNextImageKHR
+	vkMapMemory
+	vkUnmapMemory
+	vkQueueSubmit
+	vkQueuePresentKHR
+}
+
+use a command buffer, on a device queue, to load textures/mesh
+for textures, create a sampler
+for mesh, buffers
+
+// VERBOSE VERSION
+
+vkCreateInstance
+vkEnumeratePhysicalDevices
+vkGetPhysicalDeviceQueueFamilyProperties
+vkCreateDevice
+vkCreateWin32SurfaceKHR
+	vkGetPhysicalDeviceSurfaceSupportKHR
+	vkGetPhysicalDeviceSurfaceFormatsKHR
+	vkGetDeviceQueue
+	vkCreateSwapchainKHR
+
+	vkCreateRenderPass
+
+	vkCreateSemaphore
+
+	vkGetSwapchainImagesKHR
+	vkCreateImageView
+	vkCreateFramebuffer
+
+	vkCreateCommandPool
+	vkAllocateCommandBuffers
+
+	vkCreateShaderModule
+	vkCreateShaderModule
+	vkCreateBuffer
+	vkGetBufferMemoryRequirements
+	vkGetPhysicalDeviceMemoryProperties
+	vkAllocateMemory
+	vkBindBufferMemory
+	vkCreateBuffer
+	vkGetBufferMemoryRequirements
+	vkAllocateMemory
+	vkBindBufferMemory
+	vkCreateDescriptorPool
+	vkCreateDescriptorSetLayout
+	vkAllocateDescriptorSets
+	vkUpdateDescriptorSets
+
+	vkCreatePipelineLayout
+	vkCreateGraphicsPipelines
+
+populate command buffers {
+	vkBeginCommandBuffer
+	vkCmdCopyBuffer
+	vkCmdPipelineBarrier
+	vkCmdBeginRenderPass
+	vkCmdBindPipeline
+	vkCmdBindDescriptorSets
+	vkCmdDraw
+	vkCmdEndRenderPass
+	vkCmdPipelineBarrier
+	vkEndCommandBuffer
+}
+
+render loop {
+	vkAcquireNextImageKHR
+	vkMapMemory
+	vkUnmapMemory
+	vkQueueSubmit
+	vkQueuePresentKHR
+}
+
+use a command buffer, on a device queue, to load textures/mesh
+for textures, create a sampler
+for mesh, buffers
+
+
+// VERY VERBOSE VERSION
+
+vulkan
+			vkCreateInstance
+	physical device
+			vkEnumeratePhysicalDevices
+			vkGetPhysicalDeviceQueueFamilyProperties
+			vkCreateDevice
+		surface
+			vkCreateWin32SurfaceKHR
+			vkGetPhysicalDeviceSurfaceSupportKHR
+			vkGetPhysicalDeviceSurfaceFormatsKHR
+		device queue
+			vkGetDeviceQueue
+		swapchain
+			vkCreateSwapchainKHR
+
+		renderpass
+			vkCreateRenderPass
+
+		semaphore x2
+			vkCreateSemaphore
+
+		framebuffer x2
+			vkGetSwapchainImagesKHR
+			vkCreateImageView
+			vkCreateFramebuffer
+
+		command pool
+		command buffers x2
+			vkCreateCommandPool
+			vkAllocateCommandBuffers
+
+		shader module (vertex)
+			vkCreateShaderModule
+		shader module (fragment)
+			vkCreateShaderModule
+		uniform buffer
+			vkCreateBuffer
+			vkGetBufferMemoryRequirements
+			vkGetPhysicalDeviceMemoryProperties
+			vkAllocateMemory
+			vkBindBufferMemory
+			vkCreateBuffer
+		host buffer (for uniform buffer transfer)
+			vkGetBufferMemoryRequirements
+			vkAllocateMemory
+			vkBindBufferMemory
+		descriptor pool
+		descriptor set (for uniform buffer)
+			vkCreateDescriptorPool
+			vkCreateDescriptorSetLayout
+			vkAllocateDescriptorSets
+			vkUpdateDescriptorSets
+
+		pipeline layout
+			vkCreatePipelineLayout
+		graphics pipeline
+			vkCreateGraphicsPipelines
+
+populate command buffers {
+	vkBeginCommandBuffer
+	vkCmdCopyBuffer
+	vkCmdPipelineBarrier
+	vkCmdBeginRenderPass
+	vkCmdBindPipeline
+	vkCmdBindDescriptorSets
+	vkCmdDraw
+	vkCmdEndRenderPass
+	vkCmdPipelineBarrier
+	vkEndCommandBuffer
+}
+
+render loop {
+	vkAcquireNextImageKHR
+	vkMapMemory
+	vkUnmapMemory
+	vkQueueSubmit
+	vkQueuePresentKHR
+}
+
+use a command buffer, on a device queue, to load textures/mesh
+for textures, create a sampler
+for mesh, buffers

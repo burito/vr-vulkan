@@ -121,7 +121,7 @@ int vk_framebuffer(int x, int y)
 	result = vkCreateImage(device, &image_crinf, NULL, &image);
 	if( result != VK_SUCCESS )
 	{
-		log_warning("vkCreateImage = %s", i+1, vulkan_result(result));
+		log_warning("vkCreateImage = %s", vulkan_result(result));
 	}
 
 	VkMemoryRequirements mem_req;
@@ -130,14 +130,21 @@ int vk_framebuffer(int x, int y)
 	VkMemoryAllocateInfo alloc_info = {
 		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// VkStructureType    sType;
 		NULL,					// const void*        pNext;
-							// VkDeviceSize       allocationSize;
-							// uint32_t           memoryTypeIndex;
-
-
+		mem_req.size,				// VkDeviceSize       allocationSize;
+		0					// uint32_t           memoryTypeIndex;
 	};
 
-	vkAllocateMemory();
-	vkBindImageMemory();
+	VkDeviceMemory dev_mem;
+	result = vkAllocateMemory(device, &alloc_info, NULL, &dev_mem);
+	if( result != VK_SUCCESS )
+	{
+		log_warning("vkAllocateMemory = %s", vulkan_result(result));
+	}
+	result = vkBindImageMemory(device, image, dev_mem, 0);
+	if( result != VK_SUCCESS )
+	{
+		log_warning("vkBindImageMemory = %s", vulkan_result(result));
+	}
 
 	VkImageViewCreateInfo image_view_crinf = {
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	// VkStructureType            sType;
@@ -157,7 +164,7 @@ int vk_framebuffer(int x, int y)
 	result = vkCreateImageView(device, &image_view_crinf, NULL, &image_view);
 	if( result != VK_SUCCESS )
 	{
-		log_warning("vkCreateImageView = %s", i+1, vulkan_result(result));
+		log_warning("vkCreateImageView = %s", vulkan_result(result));
 	}
 
 	VkFramebufferCreateInfo fb_crinf = {
@@ -175,7 +182,7 @@ int vk_framebuffer(int x, int y)
 	result = vkCreateFramebuffer(device, &fb_crinf, NULL, &fb);
 	if( result != VK_SUCCESS )
 	{
-		log_warning("vkCreateFramebuffer = %s", i+1, vulkan_result(result));
+		log_warning("vkCreateFramebuffer = %s", vulkan_result(result));
 	}
 }
 

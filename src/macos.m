@@ -7,7 +7,6 @@
 #include <MoltenVK/mvk_vulkan.h>
 
 #include "log.h"
-
 ///////////////////////////////////////////////////////////////////////////////
 //////// Public Interface to the rest of the program
 ///////////////////////////////////////////////////////////////////////////////
@@ -37,6 +36,10 @@ char keys[KEYMAX];
 int fullscreen = 0;
 int fullscreen_toggle = 0;
 
+int main_init(int argc, char *argv[]);
+void main_loop(void);
+void main_end(void);
+
 const int sys_ticksecond = 1000000;
 long long sys_time(void)
 {
@@ -51,28 +54,18 @@ void shell_browser(char *url)
 	NSURL *MyNSURL = [NSURL URLWithString:[NSString stringWithUTF8String:url]];
 	[[NSWorkspace sharedWorkspace] openURL:MyNSURL];
 }
-
-
-static int y_correction = 0;  // to correct mouse position for title bar
-
 ///////////////////////////////////////////////////////////////////////////////
-//////// Stuff for this program
+//////// End Public Interface
 ///////////////////////////////////////////////////////////////////////////////
-
-
-
-int vulkan_init(void);
-int vulkan_loop(float time);
-
-
-long start_time = 0;
-static CVDisplayLinkRef _displayLink;
-
-NSWindow *window;
 void * pView = NULL;
+
+
+static CVDisplayLinkRef _displayLink;
+NSWindow *window;
 NSView * window_view = NULL;
 
-int we_have_vulkan = 0;
+static int y_correction = 0;	// to correct mouse position for title bar
+
 
 //
 // NSView
@@ -99,7 +92,6 @@ static CVReturn DisplayLinkCallback(CVDisplayLinkRef displayLink,
 					void *target)
 {
 //	log_debug("View:DisplayLinkCallback");
-	vulkan_loop( (sys_time() - start_time) / (float)sys_ticksecond );
 	main_loop();
 	return kCVReturnSuccess;
 }
@@ -296,8 +288,8 @@ int main(int argc, const char * argv[])
 	view.wantsLayer = YES;
 	pView = [view layer];
 
-	vulkan_init();
-	main_init(0, NULL);
+	if( main_init(argc, argv) )
+		killme = 1;
 
 	// main loop
 	float time = 0.0;

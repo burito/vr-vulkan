@@ -21,17 +21,9 @@ freely, subject to the following restrictions:
 #include <windows.h>
 
 #include "log.h"
-
-
-
-
-HINSTANCE hInst;
-HWND hWnd;
-
 ///////////////////////////////////////////////////////////////////////////////
 //////// Public Interface to the rest of the program
 ///////////////////////////////////////////////////////////////////////////////
-
 #include "keyboard.h"
 
 int killme=0;
@@ -51,6 +43,10 @@ char keys[KEYMAX];
 int fullscreen = 0;
 int fullscreen_toggle = 0;
 
+int main_init(int argc, char *argv[]);
+void main_loop(void);
+void main_end(void);
+
 const int sys_ticksecond = 1000;
 long long sys_time(void)
 {
@@ -64,7 +60,8 @@ void shell_browser(char *url)
 ///////////////////////////////////////////////////////////////////////////////
 //////// End Public Interface
 ///////////////////////////////////////////////////////////////////////////////
-
+HINSTANCE hInst;
+HWND hWnd;
 
 LRESULT CALLBACK WndProc(HWND hWndProc, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -138,10 +135,8 @@ int APIENTRY WinMain(HINSTANCE hCurrentInst, HINSTANCE hPrev,
 		return 2;
 	}
 
-	if( main_init() )
+	if( main_init(0, NULL) )
 		killme = 1;
-
-	long long last_time = sys_time();
 
 	MSG mesg;
 
@@ -163,5 +158,6 @@ int APIENTRY WinMain(HINSTANCE hCurrentInst, HINSTANCE hPrev,
 //		SwapBuffers(hDC);
 		RedrawWindow(hWnd, NULL, NULL, RDW_INTERNALPAINT);
 	}
+	main_end();
 	return 0;
 }

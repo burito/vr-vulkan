@@ -649,6 +649,7 @@ int vulkan_init(void)
 	}
 	free(present_modes); // don't need this anymore
 
+	log_info("minImageCount = %d", surface_caps.minImageCount);
 
 
 	vkGetDeviceQueue(vk.device, desired_queuefamily, 0, &vk.queue);
@@ -1344,14 +1345,14 @@ int vulkan_loop(float current_time)
 
 void vulkan_end(void)
 {
-
+/*
 	for(int i=0; i<vk.display_buffer_count; i++)
 	{
 		vkDestroyFramebuffer(vk.device, vk.framebuffer[i], NULL);
 		vkDestroyImageView(vk.device, vk.swapchainbuffers[i], NULL);
 		vkDestroySemaphore(vk.device, vk.semaphores, NULL);
 	}
-
+*/
 	vkDestroyRenderPass(vk.device, vk.renderpass, NULL);
 
 	vkDestroySwapchainKHR(vk.device, vk.swapchain, NULL);

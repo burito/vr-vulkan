@@ -12,10 +12,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include "keyboard.h"
 
-int main_init(int argc, const char *argv[]);
-void main_loop(void);
-void main_end(void);
-
 int killme=0;
 int sys_width  = 1980;	/* dimensions of default screen */
 int sys_height = 1200;
@@ -142,7 +138,6 @@ static CVReturn DisplayLinkCallback(CVDisplayLinkRef displayLink,
 {
 	log_debug("AppDelegate:applicationDidFinishLaunching");
 	// init
-	start_time = sys_time();
 	CVDisplayLinkStart(_displayLink);
 	log_debug("no really, we did finish launching");
 }
@@ -238,7 +233,7 @@ static int event_handler(NSEvent *event)
 }
 
 
-int main(int argc, const char * argv[])
+int main(int argc, char * argv[])
 {
 	log_init();
 	log_debug("main()");

@@ -40,6 +40,7 @@ int	usleep(unsigned int useconds);
 #include "3dmaths.h"
 #include "main.h"
 #include "log.h"
+#include "vulkan.h"
 
 int vr_using = 0;
 
@@ -66,18 +67,9 @@ struct VR_IVRRenderModels_FnTable * OVRM;
 // k_unMaxTrackedDeviceCount = 16 // gcc doesn't like the way this is declared
 TrackedDevicePose_t m_rTrackedDevicePose [16];
 
-/*
-struct FramebufferDesc
-{
-	GLuint m_nDepthBufferId;
-	GLuint m_nRenderTextureId;
-	GLuint m_nRenderFramebufferId;
-	GLuint m_nResolveTextureId;
-	GLuint m_nResolveFramebufferId;
-};
-struct FramebufferDesc leftEyeDesc = {0};
-struct FramebufferDesc rightEyeDesc = {0};
-*/
+struct VR_framebuffer left_eye_fb;
+struct VR_framebuffer right_eye_fb;
+
 uint32_t m_nRenderWidth;
 uint32_t m_nRenderHeight;
 int m_iValidPoseCount;
@@ -403,8 +395,8 @@ int vr_init(void)
 //	if(!leftEyeDesc.m_nDepthBufferId)
 	{
 		OVR->GetRecommendedRenderTargetSize( &m_nRenderWidth, &m_nRenderHeight );
-		vk_framebuffer( m_nRenderWidth, m_nRenderHeight);
-		vk_framebuffer( m_nRenderWidth, m_nRenderHeight);
+		vk_framebuffer( m_nRenderWidth, m_nRenderHeight, &left_eye_fb);
+		vk_framebuffer( m_nRenderWidth, m_nRenderHeight, &right_eye_fb);
 	}
 	return 0;
 #ifdef NOT_NOW

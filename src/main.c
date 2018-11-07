@@ -35,6 +35,7 @@ freely, subject to the following restrictions:
 
 int vulkan_init(void);
 int vulkan_loop(float current_time);
+void vulkan_end(void);
 
 long long time_start = 0;
 
@@ -74,7 +75,8 @@ int main_init(int argc, char *argv[])
 
 void main_end(void)
 {
-
+	vulkan_end();
+	log_info("ended ok");
 }
 
 
@@ -136,6 +138,15 @@ void main_loop(void)
 	{
 		killme=1;
 	}
+
+	if(keys[KEY_F9])
+	{	// to test if I'm leaking
+		keys[KEY_F9] = 0;
+		log_info("Restart Vulkan");
+		vulkan_end();
+		vulkan_init();
+	}
+
 
 	if(keys[KEY_F12])
 	{

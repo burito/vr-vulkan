@@ -107,7 +107,14 @@ struct VULKAN_HANDLES {
 	VkCommandBuffer command_buffers[2];
 	VkPhysicalDeviceMemoryProperties device_mem_props;
 	VkPhysicalDeviceProperties device_properties;
+
+	VkSemaphore *sc_semaphore;
+	VkCommandBuffer *sc_commandbuffer;
+	VkImage *sc_image;
+	VkImageView *sc_imageview;
+	VkFramebuffer *sc_framebuffer;
 };
+
 
 static struct VULKAN_HANDLES vk;
 
@@ -871,7 +878,7 @@ int vulkan_init(void)
 
 
 
-	int ubo_buffer_size = sizeof(UNIFORM_BUFFER);
+	int ubo_buffer_size = 4; //sizeof(UNIFORM_BUFFER);
 
 	VkBufferCreateInfo ubo_buffer_client_crinf = {
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType        sType;

@@ -72,6 +72,7 @@ extern xcb_window_t window;
 #include <stdlib.h>
 #include "vulkan_helper.h"
 #include "vulkan.h"
+#include "3dmaths.h"
 
 #include "vert_spv.h"
 #include "frag_spv.h"
@@ -85,6 +86,12 @@ VkFormat pixel_format = VK_FORMAT_B8G8R8A8_UNORM;
 VkColorSpaceKHR color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
 //VkFormat pixel_format = VK_FORMAT_R16G16B16A16_SFLOAT;
 //VkFormat pixel_format = VK_FORMAT_R64G64B64A64_UINT;
+
+struct UNIFORM_BUFFER {
+	mat4x4 projection;
+	mat4x4 modelview;
+};
+
 
 struct VULKAN_HANDLES {
 	VkInstance instance;
@@ -861,7 +868,10 @@ int vulkan_init(void)
 		log_warning("vkCreateShaderModule(fragment) = %s", vulkan_result(result));
 	}
 
-	int ubo_buffer_size = sizeof(float);
+
+
+
+	int ubo_buffer_size = sizeof(UNIFORM_BUFFER);
 
 	VkBufferCreateInfo ubo_buffer_client_crinf = {
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType        sType;

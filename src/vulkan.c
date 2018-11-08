@@ -732,8 +732,11 @@ int vulkan_init(void)
 	free(present_modes); // don't need this anymore
 
 	log_info("minImageCount = %d", surface_caps.minImageCount);
+#ifdef __APPLE__
+	vk.display_buffer_count = 2;
+#else
 	vk.display_buffer_count = 3;
-
+#endif
 	vkGetDeviceQueue(vk.device, desired_queuefamily, 0, &vk.queue);
 	log_debug("vkGetDeviceQueue");
 

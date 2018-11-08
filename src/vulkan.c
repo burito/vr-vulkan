@@ -506,8 +506,8 @@ int vulkan_init(void)
 	// we need this information for later.
 	vkGetPhysicalDeviceMemoryProperties(vkpd[desired_device], &vk.device_mem_props);
 
-	log_info("GPU        : %s", vk.device_properties.deviceName);
-	log_info("GPU VRAM   : %dMb", desired_device_vram);
+	log_info("GPU         : %s", vk.device_properties.deviceName);
+	log_info("GPU VRAM    : %dMb", desired_device_vram);
 
 	uint32_t queuefamily_count = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(vkpd[desired_device], &queuefamily_count, NULL);

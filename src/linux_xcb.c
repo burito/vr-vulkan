@@ -78,7 +78,7 @@ xcb_window_t window;
 int main(int argc, char *argv[])
 {
 	log_init();
-	log_debug("main()");
+	log_info("Platform    : XCB");
 	xcb_screen_t *screen;
 	xcb_intern_atom_reply_t *atom_wm_delete_window;
 
@@ -156,6 +156,5 @@ int main(int argc, char *argv[])
 	}
 	main_end();
 	xcb_disconnect(xcb);
-	log_debug("program exit ok");
 	return 0;
 }

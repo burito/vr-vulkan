@@ -70,11 +70,14 @@ LRESULT CALLBACK WndProc(HWND hWndProc, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_DESTROY:
 		DestroyWindow(hWndProc);
 		PostQuitMessage(0);
+		log_info("Shutdown on : WM_DESTROY");
+		killme = 1;
 		break;
 	case WM_PAINT:
 		ValidateRect(hWndProc, NULL);
 		break;
 	case WM_CLOSE:
+		log_info("Shutdown on : WM_CLOSE");
 		killme = 1;
 		return 0;
 
@@ -99,7 +102,7 @@ int APIENTRY WinMain(HINSTANCE hCurrentInst, HINSTANCE hPrev,
 	hInst = hCurrentInst;
 
 	log_init();
-	log_info("program start");
+	log_info("Platform    : win32");
 
 	WNDCLASSEX wc;
 	wc.cbSize	= sizeof(WNDCLASSEX);

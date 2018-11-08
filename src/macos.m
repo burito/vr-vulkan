@@ -236,7 +236,7 @@ static int event_handler(NSEvent *event)
 int main(int argc, char * argv[])
 {
 	log_init();
-	log_debug("main()");
+	log_info("Platform    : MacOS");
 
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	NSApplication * myapp = [NSApplication sharedApplication];
@@ -298,15 +298,10 @@ int main(int argc, char * argv[])
 			[NSApp updateWindows];
 		}
 
-		if( keys[KEY_ESCAPE] || keys[KEY_Q] )
-			killme = 1;
-
-		// opengl draw commands
 	}
 
-	[pool drain];
 	main_end();
-	log_debug("quit successfully");
+	[pool drain];
 	return 0;
 }
 

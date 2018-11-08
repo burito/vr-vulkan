@@ -78,7 +78,7 @@ Window window;
 int main(int argc, char *argv[])
 {
 	log_init();
-	log_debug("Program Start");
+	log_info("Platform    : Xlib");
 
 	display = XOpenDisplay(NULL);
 	log_debug("XOpenDisplay");
@@ -101,7 +101,9 @@ int main(int argc, char *argv[])
 
 	/* Vulkan Initialisation is here! */
 	if( main_init(argc, argv) )
+	{
 		killme = 1;
+	}
 
 	XGrabKeyboard(display, window, True, GrabModeAsync,GrabModeAsync,CurrentTime);
 

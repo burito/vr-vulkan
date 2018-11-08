@@ -701,6 +701,7 @@ int vulkan_init(void)
 	}
 
 	free(vkpd);	// don't need this anymore
+	vkpd = NULL;
 
 	log_info("present_mode_count = %d", present_mode_count);
 	for(int i=0; i<present_mode_count; i++)
@@ -1416,7 +1417,7 @@ VK_INIT_CREATESURFACE:
 	vkDestroyDevice(vk.device, NULL);
 VK_INIT_CREATEDEVICE:
 VK_INIT_ENUMERATE:
-	if(vkpd)free(vkpd);
+	if(vkpd != NULL)free(vkpd);
 	vkDestroyInstance(vk.instance, NULL);
 VK_INIT_INSTANCE:
 	return 1;

@@ -215,7 +215,7 @@ int vk_framebuffer(int x, int y, struct VR_framebuffer *fb)
 		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL// VkImageLayout            initialLayout;
 	};
 	// create color buffer
-	
+
 	result = vkCreateImage(vk.device, &image_crinf, NULL, &fb->color_image);
 	if( result != VK_SUCCESS )
 	{
@@ -233,7 +233,6 @@ int vk_framebuffer(int x, int y, struct VR_framebuffer *fb)
 		mem_req.size,				// VkDeviceSize       allocationSize;
 		mem_type				// uint32_t           memoryTypeIndex;
 	};
-
 
 	result = vkAllocateMemory(vk.device, &alloc_info, NULL, &fb->color_memory);
 	if( result != VK_SUCCESS )
@@ -369,14 +368,12 @@ int vk_framebuffer(int x, int y, struct VR_framebuffer *fb)
 		NULL						// const VkSubpassDependency*        pDependencies;
 	};
 
-
 	result = vkCreateRenderPass(vk.device, &render_pass_crinf, NULL, &fb->render_pass );
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkCreateRenderPass = %s", vulkan_result(result));
 		goto VK_FB_RENDERPASS;
 	}
-
 
 	VkImageView attachments[2] = { fb->color_view, fb->stencil_view };
 	VkFramebufferCreateInfo fb_crinf = {
@@ -677,7 +674,6 @@ int vulkan_init(void)
 		return 1;
 	}
 
-
 	// get the surface capabilities
 	VkSurfaceCapabilitiesKHR surface_caps;
 	result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vkpd[desired_device], vk.surface, &surface_caps);
@@ -737,12 +733,14 @@ int vulkan_init(void)
 	}
 	free(present_modes); // don't need this anymore
 
-	log_info("minImageCount = %d", surface_caps.minImageCount);
-#ifdef __APPLE__
-	vk.display_buffer_count = 2;
-#else
-	vk.display_buffer_count = 3;
-#endif
+
+	// how many swapchain images do we want?
+	int wanted_image_count = 3;
+	vk.display_buffer_count = surface_caps.minImageCount;
+	if( wanted_image_count > surface_caps.maxImageCount)
+		wanted_image_count = surface_caps.maxImageCount;
+	vk.display_buffer_count = wanted_image_count;
+
 	vkGetDeviceQueue(vk.device, desired_queuefamily, 0, &vk.queue);
 	log_debug("vkGetDeviceQueue");
 

@@ -437,7 +437,7 @@ int vulkan_init(void)
 {
 	VkResult result;
 
-	int layer_count = 1;
+	int layer_count = 0;
 	const char *layer_names[] = {
 		"VK_LAYER_LUNARG_standard_validation",
 	};
@@ -1309,7 +1309,7 @@ int vulkan_init(void)
 			NULL,					// const void*                pNext;
 			VK_ACCESS_MEMORY_READ_BIT,		// VkAccessFlags              srcAccessMask;
 			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,	// VkAccessFlags              dstAccessMask;
-			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,	// VkImageLayout              oldLayout;
+			VK_IMAGE_LAYOUT_UNDEFINED,		// VkImageLayout              oldLayout;
 			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,	// VkImageLayout              newLayout;
 			0,					// uint32_t                   srcQueueFamilyIndex;
 			0,					// uint32_t                   dstQueueFamilyIndex;
@@ -1332,7 +1332,7 @@ int vulkan_init(void)
 			NULL,					// const void*                pNext;
 			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,	// VkAccessFlags              srcAccessMask;
 			VK_ACCESS_MEMORY_READ_BIT,		// VkAccessFlags              dstAccessMask;
-			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,	// VkImageLayout              oldLayout;
+			VK_IMAGE_LAYOUT_UNDEFINED,		// VkImageLayout              oldLayout;
 			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,	// VkImageLayout              newLayout;
 			0,					// uint32_t                   srcQueueFamilyIndex;
 			0,					// uint32_t                   dstQueueFamilyIndex;

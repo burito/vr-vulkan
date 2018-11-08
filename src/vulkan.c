@@ -103,7 +103,11 @@ struct VULKAN_HANDLES {
 	VkPipeline pipeline;
 	VkPipelineLayout pipeline_layout;
 	VkQueue queue;
-	VkDeviceMemory ubo_client;
+	VkDeviceMemory ubo_client_mem;
+	VkDeviceMemory ubo_host_mem;
+	VkBuffer ubo_client_buffer;
+	VkBuffer ubo_host_buffer;
+
 	VkPhysicalDeviceMemoryProperties device_mem_props;
 	VkPhysicalDeviceProperties device_properties;
 
@@ -865,8 +869,7 @@ int vulkan_init(void)
 	};
 
 
-	VkBuffer ubo_buffer_client;    // Client side buffer
-	result = vkCreateBuffer(vk.device, &ubo_buffer_client_crinf, NULL, &ubo_buffer_client);
+	result = vkCreateBuffer(vk.device, &ubo_buffer_client_crinf, NULL, &vk.ubo_client_buffer);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkCreateBuffer = %s", vulkan_result(result));
@@ -874,7 +877,7 @@ int vulkan_init(void)
 	int wanted = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
 	VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 	VkMemoryRequirements vk_memreq;
-	vkGetBufferMemoryRequirements(vk.device, ubo_buffer_client, &vk_memreq);
+	vkGetBufferMemoryRequirements(vk.device, vk.ubo_client_buffer, &vk_memreq);
 	int client_memory_type = find_memory_type(vk_memreq, wanted);
 
 	// create the uniform buffer
@@ -884,19 +887,18 @@ int vulkan_init(void)
 		ubo_buffer_size,			// VkDeviceSize       allocationSize;
 		client_memory_type			// uint32_t           memoryTypeIndex;
 	};
-	result = vkAllocateMemory(vk.device, &ubo_buffer_client_alloc_info, NULL, &vk.ubo_client);
+	result = vkAllocateMemory(vk.device, &ubo_buffer_client_alloc_info, NULL, &vk.ubo_client_mem);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkAllocateMemory = %s", vulkan_result(result));
 	}
-	result = vkBindBufferMemory(vk.device, ubo_buffer_client, vk.ubo_client, 0);
+	result = vkBindBufferMemory(vk.device, vk.ubo_client_buffer, vk.ubo_client_mem, 0);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkBindBufferMemory = %s", vulkan_result(result));
 	}
 
-	VkBuffer ubo_buffer_host;    // host side buffer
-	result = vkCreateBuffer(vk.device, &ubo_buffer_host_crinf, NULL, &ubo_buffer_host);
+	result = vkCreateBuffer(vk.device, &ubo_buffer_host_crinf, NULL, &vk.ubo_host_buffer);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkCreateBuffer = %s", vulkan_result(result));
@@ -904,7 +906,7 @@ int vulkan_init(void)
 
 	// for the host buffer
 	wanted = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-	vkGetBufferMemoryRequirements(vk.device, ubo_buffer_host, &vk_memreq);
+	vkGetBufferMemoryRequirements(vk.device, vk.ubo_host_buffer, &vk_memreq);
 	int host_memory_type = find_memory_type(vk_memreq, wanted);
 
 	VkMemoryAllocateInfo ubo_buffer_host_alloc_info = {
@@ -913,13 +915,12 @@ int vulkan_init(void)
 		ubo_buffer_size,			// VkDeviceSize       allocationSize;
 		host_memory_type			// uint32_t           memoryTypeIndex;
 	};
-	VkDeviceMemory ubo_buffer_host_mem;
-	result = vkAllocateMemory(vk.device, &ubo_buffer_host_alloc_info, NULL, &ubo_buffer_host_mem);
+	result = vkAllocateMemory(vk.device, &ubo_buffer_host_alloc_info, NULL, &vk.ubo_host_mem);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkAllocateMemory = %s", vulkan_result(result));
 	}
-	result = vkBindBufferMemory(vk.device, ubo_buffer_host, ubo_buffer_host_mem, 0);
+	result = vkBindBufferMemory(vk.device, vk.ubo_host_buffer, vk.ubo_host_mem, 0);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkBindBufferMemory = %s", vulkan_result(result));
@@ -984,7 +985,7 @@ int vulkan_init(void)
 		log_warning("vkAllocateDescriptorSets = %s", vulkan_result(result));
 	}
 
-	VkDescriptorBufferInfo desc_buf_info = {ubo_buffer_host,0,sizeof(float)};
+	VkDescriptorBufferInfo desc_buf_info = {vk.ubo_host_buffer,0,sizeof(float)};
 	VkWriteDescriptorSet desc_write_set = {
 		VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,	// VkStructureType                  sType;
 		NULL,					// const void*                      pNext;
@@ -1309,7 +1310,7 @@ int vulkan_init(void)
 		result = vkBeginCommandBuffer(vk.sc_commandbuffer[i], &vk_cmdbegin);
 		if( result != VK_SUCCESS ) { log_warning("vkBeginCommandBuffer = %s", vulkan_result(result)); }
 		
-		vkCmdCopyBuffer( vk.sc_commandbuffer[i], ubo_buffer_client, ubo_buffer_host, 1, &buffer_copy[0]);
+		vkCmdCopyBuffer( vk.sc_commandbuffer[i], vk.ubo_client_buffer, vk.ubo_host_buffer, 1, &buffer_copy[0]);
 
 		vkCmdPipelineBarrier(vk.sc_commandbuffer[i],
 			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -1359,13 +1360,13 @@ int vulkan_loop(float current_time)
 //	log_debug("current = %d, next = %d", vk.current_image, next_image);
 
 	float * data;
-	result = vkMapMemory(vk.device, vk.ubo_client, 0, sizeof(float), 0, (void**)&data);
+	result = vkMapMemory(vk.device, vk.ubo_client_mem, 0, sizeof(float), 0, (void**)&data);
 	if(result != VK_SUCCESS)
 	{
 		log_warning("vkMapMemory = %s", vulkan_result(result));
 	}
 	data[0] = current_time;
-	vkUnmapMemory(vk.device, vk.ubo_client);
+	vkUnmapMemory(vk.device, vk.ubo_client_mem);
 
 	VkPipelineStageFlags vkflags = VK_PIPELINE_STAGE_TRANSFER_BIT;
 	VkSubmitInfo submit_info = {
@@ -1427,8 +1428,14 @@ void vulkan_end(void)
 
 	vkDestroyShaderModule(vk.device, vk.shader_module_frag, NULL);
 	vkDestroyShaderModule(vk.device, vk.shader_module_vert, NULL);
+	vkFreeMemory(vk.device, vk.ubo_client_mem, NULL);
+	vkFreeMemory(vk.device, vk.ubo_host_mem, NULL);
+	vkDestroyBuffer(vk.device, vk.ubo_client_buffer, NULL);
+	vkDestroyBuffer(vk.device, vk.ubo_host_buffer, NULL);
 	vkDestroyDescriptorSetLayout(vk.device, vk.layout_ubo, NULL);
 	vkDestroyDescriptorPool(vk.device, vk.descriptor_pool, NULL);
+
+
 
 	for(int i=0; i<vk.display_buffer_count; i++)
 	{

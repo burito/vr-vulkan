@@ -439,14 +439,20 @@ void vk_framebuffer_free(struct VR_framebuffer *fb)
 int vulkan_init(void)
 {
 	VkResult result;
+
+	int layer_count = 1;
+	const char *layer_names[] = {
+		"VK_LAYER_LUNARG_standard_validation",
+	};
+
 	/* Vulkan Initialisation is here! */
 	VkInstanceCreateInfo vkici = {
 		VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,	// VkStructureType             sType;
 		NULL,					// const void*                 pNext;
 		0,					// VkInstanceCreateFlags       flags;
 		0,					// const VkApplicationInfo*    pApplicationInfo;
-		0,					// uint32_t                    enabledLayerCount;
-		0,					// const char* const*          ppEnabledLayerNames;
+		layer_count,					// uint32_t                    enabledLayerCount;
+		layer_names,					// const char* const*          ppEnabledLayerNames;
 		vulkan_extention_count,			// uint32_t                    enabledExtensionCount;
 		vulkan_extension_strings		// const char* const*          ppEnabledExtensionNames;
 	};
@@ -890,6 +896,11 @@ int vulkan_init(void)
 	VkMemoryRequirements vk_memreq;
 	vkGetBufferMemoryRequirements(vk.device, vk.ubo_client_buffer, &vk_memreq);
 	int client_memory_type = find_memory_type(vk_memreq, wanted);
+
+	if( ubo_buffer_size < vk_memreq.size )
+	{
+		ubo_buffer_size = vk_memreq.size;
+	}
 
 	VkMemoryAllocateInfo ubo_buffer_client_alloc_info = {
 		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// VkStructureType    sType;
@@ -1428,6 +1439,8 @@ VK_INIT_INSTANCE:
 
 void vulkan_end(void)
 {
+	vkQueueWaitIdle(vk.queue);
+
 	for(int i=0; i<vk.display_buffer_count; i++)
 	{
 		vkDestroySemaphore(vk.device, vk.sc_semaphore[i], NULL);

@@ -17,7 +17,7 @@ Build Environment
 * Install [mingw-w64-install.exe](http://sourceforge.net/projects/mingw-w64/files/) 8.1.0-x86_64-posix-seh
 * Add its ```bin``` directory to your path
 * Install current GPU drivers
-	* Nvidia 416.34
+	* Nvidia 416.81
 
 ### Linux
 * Install current GPU drivers and compiler

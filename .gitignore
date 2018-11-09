@@ -15,3 +15,4 @@ libopenvr_api.dylib
 
 #linux files
 vulkan
+libopenvr_api.so

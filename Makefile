@@ -85,10 +85,13 @@ libopenvr_api.dylib: deps/mac/libopenvr_api.dylib
 openvr_api.dll: deps/win/openvr_api.dll
 	cp $< $@
 
+libopenvr_api.so: deps/lin/libopenvr_api.so
+	cp $< $@
+
 vulkan.exe: $(WIN_OBJS) openvr_api.dll
 	$(CC) $^ $(WIN_LIBS) -o $@
 
-vulkan: $(LIN_OBJS)
+vulkan: $(LIN_OBJS) libopenvr_api.so
 	$(CC) $(CFLAGS) $(LIN_LIBS) $^ -o $@
 
 vulkan.bin: $(MAC_OBJS) libMoltenVK.dylib libopenvr_api.dylib
@@ -172,7 +175,7 @@ $(MAC_CONTENTS)/MacOS/$(MAC_BUNDLE): $(MAC_BUNDLE).bin
 # end build the App Bundle
 
 clean:
-	@rm -rf build vulkan vulkan.exe vulkan.bin vulkan.app libMoltenVK.dylib libopenvr_api.dylib openvr_api.dll
+	@rm -rf build vulkan vulkan.exe vulkan.bin vulkan.app libMoltenVK.dylib libopenvr_api.dylib openvr_api.dll libopenvr_api.so
 
 # create the build directory
 $(shell	mkdir -p $(BUILD_DIR))

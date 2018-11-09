@@ -46,7 +46,7 @@ CFLAGS = -Ideps/include -Ibuild
 VPATH = src build
 
 WIN_LIBS = c:/Windows/system32/vulkan-1.dll openvr_api.dll -luser32 -lwinmm -lgdi32
-LIN_LIBS = -Ldeps/lin -lvulkan -lxcb
+LIN_LIBS = -Ldeps/lin -lvulkan -lxcb -lm -lopenvr_api
 MAC_LIBS = -Ldeps/mac -lMoltenVK -lopenvr_api -framework CoreVideo -framework QuartzCore -rpath . -framework Cocoa
 # replace -lxcb with -lX11 if using Xlib
 

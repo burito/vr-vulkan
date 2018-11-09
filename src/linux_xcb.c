@@ -20,6 +20,9 @@ freely, subject to the following restrictions:
 
 #include <stdlib.h>
 #include <xcb/xcb.h>
+#include <sys/time.h>
+#include <string.h>
+#include <stdio.h>
 
 #include "log.h"
 ///////////////////////////////////////////////////////////////////////////////
@@ -99,7 +102,7 @@ int main(int argc, char *argv[])
 	value_list[0] = screen->black_pixel;
 	value_list[1] = XCB_EVENT_MASK_KEY_RELEASE;
 
-	xcb_create_window(xcb, XCB_COPY_FROM_PARENT, window, screen->root, 0, 0, VIDX, VIDY, 0,
+	xcb_create_window(xcb, XCB_COPY_FROM_PARENT, window, screen->root, 0, 0, vid_width, vid_height, 0,
 	XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual, value_mask, value_list);
 
 
@@ -151,7 +154,6 @@ int main(int argc, char *argv[])
 
 		main_loop();
 
-		if(ret)killme = 1;
 		/* main loop ends here! */
 	}
 	main_end();

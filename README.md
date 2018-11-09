@@ -1,6 +1,6 @@
-Vulkan Example
-==============
-This is a basic Vulkan Fragment Shader Window example, that compiles from the command line on Windows, Linux and MacOS.
+VR-Vulkan Example
+=================
+This is a basic Vulkan Fragment Shader Window example, that compiles from the command line on Windows, Linux and MacOS. It's currently growing VR support out of the side.
 
 
 Compiling (all OS's)
@@ -20,20 +20,68 @@ Build Environment
 	* Nvidia 416.34
 
 ### Linux
-* ```apt-get install build-essential clang```
-* Install current GPU drivers
+* Install current GPU drivers and compiler
 	* ```add-apt-repository ppa:graphics-drivers/ppa```
 	* ```apt-get update```
-	* ```apt-get install nvidia-driver-410```
+	* ```apt-get install nvidia-410 vulkan-utils build-essential clang```
 
 ### MacOS
 
 * Install XCode
 
+Executing
+---------
+### Windows & MacOS
+Run it however you normally would. On Mac, if you want to run the naked executable (the one without the icon), be aware that the keyboard will not work. That's a feature of MacOS.
+
+### Linux
+    ~/.steam/steam/ubuntu12_32/steam-runtime/run.sh ./vulkan
+    # ~~or~~
+    LD_LIBRARY_PATH=. ./vulkan
+The latter will use the OpenVR library packaged in this repository, which should be enough for it to load, but I don't think OpenVR will function correctly, or at all.
+
+### All Platforms
+
+If you run it from a terminal, there will be lots of output. It should look something like...
+
+    16:19:05.280853461 [INFO] Platform    : XCB
+    16:19:05.281110039 [INFO] Version     : 3a52e47-dirty
+    16:19:05.310715619 [INFO] GPU         : GeForce GTX 1080 Ti
+    16:19:05.310730006 [INFO] GPU VRAM    : 11264Mb
+    16:19:05.310734518 [INFO] queuefamily[0].flags = 15
+	...
+And so on and so forth.
+
 
 Libraries
 ---------
-This is not required to build, this is just how I procured the libraries present in this repo.
+This is not required to build, this is just how I procured the libraries present in this repo. I run this periodically to update the things.
+
+    DEST=`pwd`/deps
+    cd ..
+    # grab the relevant repos
+    git clone git@github.com:KhronosGroup/Vulkan-Headers
+    git clone git@github.com:KhronosGroup/MoltenVK
+    git clone git@github.com:ValveSoftware/openvr
+    git clone git@github.com:nothings/stb
+    git clone git@github.com:niswegmann/small-matrix-inverse
+    # copy the files we want
+    cp -r Vulkan-Headers/include/vulkan $DEST/include/
+    cp MoltenVK/MoltenVK/MoltenVK/API/* $DEST/include/MoltenVK
+    cp openvr/headers/* $DEST/include/
+    cp openvr/bin/osx32/libopenvr_api.dylib $DEST/mac/
+    cp openvr/bin/win64/openvr* $DEST/win/
+    cp openvr/lib/win64/openvr* $DEST/win/
+    cp openvr/bin/linux64/libopenvr* $DEST/lin/
+    cp stb/stb_image.h $DEST/include/
+    cp small-matrix-inverse/invert4x4_sse.h $DEST/include
+    # perform needed modifications
+    sed -i 's/static inline void invert4x4/void invert4x4/' $DEST/include/invert4x4_sse.h
+    sed -i 's/struct HmdVector2_t & vCenter/struct HmdVector2_t * vCenter/' $DEST/include/openvr_capi.h
+    # return to where we started
+    cd $DEST/..
+
+
 
 ### Windows & Linux
 Grab them from the [LunarG Vulkan SDK](https://vulkan.lunarg.com/)
@@ -58,16 +106,17 @@ Credits
 	* http://www.leapsecond.com/
 * ```deps/include/invert4x4_sse.h```
 	* https://github.com/niswegmann/small-matrix-inverse
+	* 6eac02b84ad06870692abaf828638a391548502c
 * ```deps/*openvr*``` - Valve Software
 	* https://github.com/ValveSoftware/openvr
-	* OpenVR 1.0.16 - 6aacebd1246592d9911439d5abd0c657b8948ab0
-	* Fix the typo on ```openvr_capi.h:2164``` from version 1.0.11
+	* OpenVR 1.0.17 - 1fb1030f2ac238456dca7615a4408fb2bb42afb6
+	* Fix the typo in ```openvr_capi.h``` from version 1.0.11
 * ```deps/include/vulkan/*``` - Khronos Group
 	* https://github.com/KhronosGroup/Vulkan-Headers
-	* 2fd5a24ec4a6df303b2155b3f85b6b8c1d56f6c0
+	* 369e6ea7f9b8cf0155b183da7e5be1b39ef6138d
 * ```deps/include/MoltenVK/*``` - Khronos Group
 	* https://github.com/KhronosGroup/MoltenVK/
-	* 4c5f7b8b0deeb11b8f72d1af6ffef882305170c3
+	* 9517c58dbdf1b4c269bd700b346361a5dc01f1c0
 * ```deps/win/*``` - LunarG Vulkan SDK for Windows
 	* 1.1.82.1
 * ```deps/lin/*``` - LunarG Vulkan SDK for Linux

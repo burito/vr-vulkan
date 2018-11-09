@@ -332,12 +332,11 @@ MTLVertexStepFunction mvkMTLVertexStepFunctionFromVkVertexInputRate(VkVertexInpu
 /** Returns the Metal MTLPrimitiveType corresponding to the specified Vulkan VkPrimitiveTopology. */
 MTLPrimitiveType mvkMTLPrimitiveTypeFromVkPrimitiveTopology(VkPrimitiveTopology vkTopology);
 
-/**
- * Returns the Metal MTLPrimitiveTopologyClass corresponding to the specified Vulkan VkPrimitiveTopology.
- *
- * The value is treated as an NSUInteger to support OS versions on which the enum is unavailable.
- */
-NSUInteger mvkMTLPrimitiveTopologyClassFromVkPrimitiveTopology(VkPrimitiveTopology vkTopology);
+/** Returns the Metal MTLPrimitiveTopologyClass corresponding to the specified Vulkan VkPrimitiveTopology. */
+MTLPrimitiveTopologyClass mvkMTLPrimitiveTopologyClassFromVkPrimitiveTopology(VkPrimitiveTopology vkTopology);
+
+/** Returns the Metal MTLTriangleFillMode corresponding to the specified Vulkan VkPolygonMode, */
+MTLTriangleFillMode mvkMTLTriangleFillModeFromVkPolygonMode(VkPolygonMode vkFillMode);
 
 /** Returns the Metal MTLLoadAction corresponding to the specified Vulkan VkAttachmentLoadOp. */
 MTLLoadAction mvkMTLLoadActionFromVkAttachmentLoadOp(VkAttachmentLoadOp vkLoadOp);
@@ -362,9 +361,6 @@ MTLCullMode mvkMTLCullModeFromVkCullModeFlags(VkCullModeFlags vkCull);
 
 /** Returns the Metal MTLWinding corresponding to the specified Vulkan VkFrontFace, */
 MTLWinding mvkMTLWindingFromVkFrontFace(VkFrontFace vkWinding);
-
-/** Returns the Metal MTLTriangleFillMode corresponding to the specified Vulkan VkPolygonMode, */
-MTLTriangleFillMode mvkMTLTriangleFillModeFromVkPolygonMode(VkPolygonMode vkFillMode);
 
 /** Returns the Metal MTLIndexType corresponding to the specified Vulkan VkIndexType, */
 MTLIndexType mvkMTLIndexTypeFromVkIndexType(VkIndexType vkIdxType);
@@ -416,6 +412,9 @@ static inline VkExtent3D mvkVkExtent3DFromMTLSize(MTLSize mtlSize) {
 
 /** Macro indicating the Vulkan memory type bits corresponding to Metal shared memory (host visible and coherent). */
 #define MVK_VK_MEMORY_TYPE_METAL_SHARED		(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT)
+
+/** Macro indicating the Vulkan memory type bits corresponding to Metal memoryless memory (not host visible and lazily allocated). */
+#define MVK_VK_MEMORY_TYPE_METAL_MEMORYLESS	(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT)
 
 /** Returns the Metal storage mode corresponding to the specified Vulkan memory flags. */
 MTLStorageMode mvkMTLStorageModeFromVkMemoryPropertyFlags(VkMemoryPropertyFlags vkFlags);

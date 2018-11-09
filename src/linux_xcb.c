@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 	uint32_t value_mask, value_list[32];
 	value_mask = XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK;
 	value_list[0] = screen->black_pixel;
-	value_list[1] = XCB_EVENT_MASK_KEY_RELEASE;
+	value_list[1] = XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE;
 
 	xcb_create_window(xcb, XCB_COPY_FROM_PARENT, window, screen->root, 0, 0, vid_width, vid_height, 0,
 	XCB_WINDOW_CLASS_INPUT_OUTPUT, screen->root_visual, value_mask, value_list);
@@ -125,9 +125,23 @@ int main(int argc, char *argv[])
 		while(event)
 		{
 			switch ( event->response_type & 0x7f) {
+			case XCB_KEY_PRESS:
+				{
+					int code = ((xcb_key_press_event_t*)event)->detail;
+					if(code >= KEYMAX)
+						log_debug("key press too big = %d", code);
+					else
+						keys[code]=1;
+				}
+				break;
 			case XCB_KEY_RELEASE:
-				log_debug("key release");
-				killme = 1;
+				{
+					int code = ((xcb_key_release_event_t*)event)->detail;
+					if(code >= KEYMAX)
+						log_debug("key release too big = %d", code);
+					else
+						keys[code]=0;
+				}
 				break;
 			case XCB_DESTROY_NOTIFY:
 			case XCB_DESTROY_WINDOW:

@@ -30,7 +30,7 @@ freely, subject to the following restrictions:
 #include "main.h"
 #include "text.h"
 #include "3dmaths.h"
-
+#include "mesh.h"
 #include "vr.h"
 
 int vulkan_init(void);
@@ -41,8 +41,9 @@ long long time_start = 0;
 
 float step = 0.0f;
 
-/*
+
 WF_OBJ * bunny;
+/*
 IMG * img;
 GLSLSHADER *shader;
 */
@@ -72,6 +73,8 @@ int main_init(int argc, char *argv[])
 		return 1;
 	}
 //	vr_init();
+
+	bunny = wf_load("data/stanford-bunny.obj");
 
 	log_info("Initialised : OK");
 	return 0;   // it worked!

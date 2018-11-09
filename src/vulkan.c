@@ -93,41 +93,10 @@ struct UNIFORM_BUFFER {
 };
 
 
-struct VULKAN_HANDLES {
-	VkInstance instance;
-	VkSurfaceKHR surface;
-	VkDevice device;
-	VkSwapchainKHR swapchain;
-	VkRenderPass renderpass;
-	VkCommandPool commandpool;
-	VkPipeline pipeline;
-	VkPipelineLayout pipeline_layout;
-	VkQueue queue;
-	VkDeviceMemory ubo_client_mem;
-	VkDeviceMemory ubo_host_mem;
-	VkBuffer ubo_client_buffer;
-	VkBuffer ubo_host_buffer;
-
-	VkPhysicalDeviceMemoryProperties device_mem_props;
-	VkPhysicalDeviceProperties device_properties;
-
-	VkDescriptorPool descriptor_pool;
-	VkDescriptorSetLayout layout_ubo;
-	VkShaderModule shader_module_vert;
-	VkShaderModule shader_module_frag;
-
-	uint32_t display_buffer_count;
-	VkSemaphore *sc_semaphore;
-	VkCommandBuffer *sc_commandbuffer;
-	VkImage *sc_image;
-	VkImageView *sc_imageview;
-	VkFramebuffer *sc_framebuffer;
-
-	int current_image;
-};
 
 
-static struct VULKAN_HANDLES vk;
+
+struct VULKAN_HANDLES vk;
 
 int find_memory_type(VkMemoryRequirements requirements, VkMemoryPropertyFlags wanted)
 {
@@ -142,6 +111,75 @@ int find_memory_type(VkMemoryRequirements requirements, VkMemoryPropertyFlags wa
 	}
 	log_warning("could not find the desired memory type");
 	return 0;
+}
+
+int vk_create_buffer(VkBufferUsageFlags usage, VkMemoryPropertyFlags flags, struct VULKAN_BUFFER *x, VkDeviceSize size, void *data)
+{
+	VkResult result;
+	VkBufferCreateInfo buffer_crinf = {
+		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType        sType;
+		NULL,					// const void*            pNext;
+		0,					// VkBufferCreateFlags    flags;
+		size,					// VkDeviceSize           size;
+		usage,					// VkBufferUsageFlags     usage;
+		VK_SHARING_MODE_EXCLUSIVE,		// VkSharingMode          sharingMode;
+		0,					// uint32_t               queueFamilyIndexCount;
+		NULL					// const uint32_t*        pQueueFamilyIndices;
+	};
+	result = vkCreateBuffer(vk.device, &buffer_crinf, NULL, &x->buffer);
+	if( result != VK_SUCCESS )
+	{
+		log_fatal("vkCreateBuffer = %s", vulkan_result(result));
+		goto VK_CB_BUFFER;
+	}
+	
+	VkMemoryRequirements requirements;
+	vkGetBufferMemoryRequirements(vk.device, x->buffer, &requirements);
+	uint32_t memory_type = find_memory_type(requirements, flags);
+
+	x->size = requirements.size;
+
+	VkMemoryAllocateInfo buffer_alloc_info = {
+		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// VkStructureType    sType;
+		NULL,					// const void*        pNext;
+		x->size,				// VkDeviceSize       allocationSize;
+		memory_type				// uint32_t           memoryTypeIndex;
+	};
+	result = vkAllocateMemory(vk.device, &buffer_alloc_info, NULL, &x->memory);
+	if( result != VK_SUCCESS )
+	{
+		log_fatal("vkAllocateMemory = %s", vulkan_result(result));
+		goto VK_CB_ALLOCATE;
+	}
+
+	if(data != NULL)
+	{
+		void *mapped;
+		result = vkMapMemory(vk.device, x->memory, 0, size, 0, &mapped);
+		if( result != VK_SUCCESS )
+		{
+			log_fatal("vkMapMemory = %s", vulkan_result(result));
+			goto VK_CB_MAP;
+		}
+		memcpy(mapped, data, size);
+		vkUnmapMemory(vk.device, x->memory);
+	}
+
+	result = vkBindBufferMemory(vk.device, x->buffer, x->memory, 0);
+	if( result != VK_SUCCESS )
+	{
+		log_fatal("vkBindBufferMemory = %s", vulkan_result(result));
+		goto VK_CB_BIND;
+	}
+
+	return 0;
+VK_CB_BIND:
+VK_CB_MAP:
+	vkFreeMemory(vk.device, x->memory, NULL);
+VK_CB_ALLOCATE:
+	vkDestroyBuffer(vk.device, x->buffer, NULL);
+VK_CB_BUFFER:
+	return 1;
 }
 
 
@@ -437,7 +475,7 @@ int vulkan_init(void)
 {
 	VkResult result;
 
-	int layer_count = 0;
+	int layer_count = 1;
 	const char *layer_names[] = {
 		"VK_LAYER_LUNARG_standard_validation",
 	};
@@ -1437,8 +1475,13 @@ VK_INIT_INSTANCE:
 
 void vulkan_end(void)
 {
-	vkQueueWaitIdle(vk.queue);
-
+	VkResult result;
+	result = vkQueueWaitIdle(vk.queue);
+	if( result != VK_SUCCESS )
+	{
+		log_warning("vkQueueWaitIdle = %s", vulkan_result(result));
+//		goto TODO_ERROR_HANDLING;
+	}
 	for(int i=0; i<vk.display_buffer_count; i++)
 	{
 		vkDestroySemaphore(vk.device, vk.sc_semaphore[i], NULL);

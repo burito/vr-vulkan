@@ -41,9 +41,9 @@ default: vulkan.exe
 endif
 endif
 
-OBJS = main.o log.o vr.o vulkan.o vulkan_helper.o version.o 3dmaths.o text.o
+OBJS = main.o log.o vr.o vulkan.o vulkan_helper.o version.o 3dmaths.o text.o mesh.o image.o stb_image.o fast_atof.o
 CFLAGS = -Ideps/include -Ibuild
-VPATH = src build
+VPATH = src build deps
 
 WIN_LIBS = c:/Windows/system32/vulkan-1.dll openvr_api.dll -luser32 -lwinmm -lgdi32
 LIN_LIBS = -Ldeps/lin -lvulkan -lxcb -lm -lopenvr_api

@@ -36,8 +36,49 @@ struct VR_framebuffer {
 	VkFramebuffer framebuffer;
 };
 
+struct VULKAN_BUFFER {
+	VkBuffer buffer;
+	VkDeviceMemory memory;
+	VkDeviceSize size;
+};
+
+struct VULKAN_HANDLES {
+	VkInstance instance;
+	VkSurfaceKHR surface;
+	VkDevice device;
+	VkSwapchainKHR swapchain;
+	VkRenderPass renderpass;
+	VkCommandPool commandpool;
+	VkPipeline pipeline;
+	VkPipelineLayout pipeline_layout;
+	VkQueue queue;
+	VkDeviceMemory ubo_client_mem;
+	VkDeviceMemory ubo_host_mem;
+	VkBuffer ubo_client_buffer;
+	VkBuffer ubo_host_buffer;
+
+	VkPhysicalDeviceMemoryProperties device_mem_props;
+	VkPhysicalDeviceProperties device_properties;
+
+	VkDescriptorPool descriptor_pool;
+	VkDescriptorSetLayout layout_ubo;
+	VkShaderModule shader_module_vert;
+	VkShaderModule shader_module_frag;
+
+	uint32_t display_buffer_count;
+	VkSemaphore *sc_semaphore;
+	VkCommandBuffer *sc_commandbuffer;
+	VkImage *sc_image;
+	VkImageView *sc_imageview;
+	VkFramebuffer *sc_framebuffer;
+
+	int current_image;
+};
+extern struct VULKAN_HANDLES vk;
+
 int vk_framebuffer(int x, int y, struct VR_framebuffer *fb);
 void vk_framebuffer_free(struct VR_framebuffer *fb);
+int vk_create_buffer(VkBufferUsageFlags usage, VkMemoryPropertyFlags flags, struct VULKAN_BUFFER *x, VkDeviceSize size, void *data);
 
 
 

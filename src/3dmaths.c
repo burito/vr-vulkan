@@ -21,9 +21,7 @@ freely, subject to the following restrictions:
    distribution.
 */
 
-
 #include "invert4x4_sse.h"
-
 
 #include <math.h>
 #include <stdio.h>

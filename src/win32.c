@@ -69,9 +69,9 @@ LRESULT CALLBACK WndProc(HWND hWndProc, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	switch(uMsg) {
 	case WM_DESTROY:
 		DestroyWindow(hWndProc);
-		PostQuitMessage(0);
-		log_info("Shutdown on : WM_DESTROY");
-		killme = 1;
+//		PostQuitMessage(0);
+//		log_info("Shutdown on : WM_DESTROY");
+//		killme = 1;
 		break;
 	case WM_PAINT:
 		ValidateRect(hWndProc, NULL);
@@ -157,8 +157,21 @@ int APIENTRY WinMain(HINSTANCE hCurrentInst, HINSTANCE hPrev,
 
 		}
 
+		if(keys[KEY_F8])
+		{
+			keys[KEY_F8] = 0;
+			main_end();
+			DestroyWindow(hWnd);
+			hWnd = CreateWindowEx(0, winClassName, winClassName,
+				WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_SYSMENU, // WS_TILEDWINDOW, //|WS_CLIPSIBLINGS|WS_CLIPCHILDREN,
+				50,50,
+				wr.right - wr.left,  // width
+				wr.bottom - wr.top,  // height
+				NULL,NULL,hInst,NULL);
+			main_init(0, NULL);
+		}
+
 		main_loop();
-//		SwapBuffers(hDC);
 		RedrawWindow(hWnd, NULL, NULL, RDW_INTERNALPAINT);
 	}
 	main_end();

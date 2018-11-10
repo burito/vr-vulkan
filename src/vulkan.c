@@ -606,14 +606,40 @@ void vk_mesh_pipeline(void)
 		}
 	};
 
+	VkVertexInputBindingDescription vertex_binding_description = {
+		0,				// uint32_t             binding;
+		32,				// uint32_t             stride;
+		VK_VERTEX_INPUT_RATE_VERTEX	// VkVertexInputRate    inputRate;
+	};
+
+
+	VkVertexInputAttributeDescription attribute_binding_description[] = {{
+			0,				// uint32_t    location;
+			0,				// uint32_t    binding;
+			VK_FORMAT_R32G32B32_SFLOAT,	// VkFormat    format;
+			0				// uint32_t    offset;
+		},{
+			1,				// uint32_t    location;
+			0,				// uint32_t    binding;
+			VK_FORMAT_R32G32B32_SFLOAT,	// VkFormat    format;
+			16				// uint32_t    offset;
+		},{
+			2,				// uint32_t    location;
+			0,				// uint32_t    binding;
+			VK_FORMAT_R32G32_SFLOAT,	// VkFormat    format;
+			24				// uint32_t    offset;
+		}
+	};
+
+
 	VkPipelineVertexInputStateCreateInfo vertex_input_state_crinf = {
 		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType                             sType;
 		NULL,								// const void*                                 pNext;
 		0,								// VkPipelineVertexInputStateCreateFlags       flags;
-		0,								// uint32_t                                    vertexBindingDescriptionCount;
-		NULL,								// const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
-		0,								// uint32_t                                    vertexAttributeDescriptionCount;
-		NULL								// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
+		1,								// uint32_t                                    vertexBindingDescriptionCount;
+		&vertex_binding_description,					// const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
+		3,								// uint32_t                                    vertexAttributeDescriptionCount;
+		attribute_binding_description					// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
 	};
 
 	// input assembly, viewport

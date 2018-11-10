@@ -124,5 +124,9 @@ Credits
 * ```src/macos.m```
 	* based on the work of Dmytro Ivanov
 	* https://github.com/jimon/osx_app_in_plain_c
+* ```data/stanford-bunny.obj```
+    * The Stanford Bunny.
+    * http://graphics.stanford.edu/data/3Dscanrep/
+    * Not for commercial use.
 
 For everything else, I am to blame.

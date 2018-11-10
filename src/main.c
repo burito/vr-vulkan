@@ -83,6 +83,7 @@ int main_init(int argc, char *argv[])
 
 void main_end(void)
 {
+	wf_free(bunny);
 	vulkan_end();
 	log_info("Shutdown    : OK");
 }

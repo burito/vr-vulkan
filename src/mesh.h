@@ -23,6 +23,8 @@ freely, subject to the following restrictions:
 
 #include "3dmaths.h"
 #include "image.h"
+#include <vulkan/vulkan.h>
+#include "vulkan.h"
 
 
 typedef struct WF_MTL
@@ -57,7 +59,8 @@ typedef struct WF_OBJ
 	char *filename;
 	char **groups;
 	int *sgroups;
-	uint32_t va, ab, eb;
+	struct VULKAN_BUFFER vertex_buffer, index_buffer;
+//	uint32_t va, ab, eb;
 	void (*draw)(struct WF_OBJ*);
 } WF_OBJ;
 
@@ -73,5 +76,9 @@ void mtl_end(void);
 
 WF_OBJ* wf_load(char *filename);
 void wf_free(WF_OBJ *w);
+
+void wf_gpu_load(WF_OBJ *w);
+void wf_gpu_unload(WF_OBJ *w);
+
 
 

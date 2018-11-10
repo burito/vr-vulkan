@@ -462,10 +462,9 @@ static void wf_texcoords(WF_OBJ *w)
 }
 
 
-static void wf_gpu_load(WF_OBJ *w)
+void wf_gpu_load(WF_OBJ *w)
 {
 	if(!w)return;
-	w->va = w->ab = w->eb  = 0;
 
 	VkResult result;
 	struct VULKAN_BUFFER vertex_staging;
@@ -488,12 +487,12 @@ static void wf_gpu_load(WF_OBJ *w)
 	vk_create_buffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT |
 		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		&vertex_buffer, vertex_staging.size, NULL);
+		&w->vertex_buffer, vertex_staging.size, NULL);
 
 	vk_create_buffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT |
 		VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		&index_buffer, index_staging.size, NULL);
+		&w->index_buffer, index_staging.size, NULL);
 
 	VkCommandBuffer cmdbuf;
 	VkCommandBufferAllocateInfo cmdbufallocinf = {
@@ -529,9 +528,9 @@ static void wf_gpu_load(WF_OBJ *w)
 		0	// VkDeviceSize    size;
 	};
 	region.size = vertex_staging.size;
-	vkCmdCopyBuffer(cmdbuf, vertex_staging.buffer, vertex_buffer.buffer, 1, &region);
+	vkCmdCopyBuffer(cmdbuf, vertex_staging.buffer, w->vertex_buffer.buffer, 1, &region);
 	region.size = index_staging.size;
-	vkCmdCopyBuffer(cmdbuf, index_staging.buffer, index_buffer.buffer, 1, &region);
+	vkCmdCopyBuffer(cmdbuf, index_staging.buffer, w->index_buffer.buffer, 1, &region);
 	result = vkEndCommandBuffer(cmdbuf);
 	if( result != VK_SUCCESS )
 	{
@@ -571,7 +570,13 @@ static void wf_gpu_load(WF_OBJ *w)
 	vkDestroyBuffer(vk.device, vertex_staging.buffer, NULL);
 }
 
-
+void wf_gpu_unload(WF_OBJ *w)
+{
+	vkFreeMemory(vk.device, w->index_buffer.memory, NULL);
+	vkDestroyBuffer(vk.device, w->index_buffer.buffer, NULL);
+	vkFreeMemory(vk.device, w->vertex_buffer.memory, NULL);
+	vkDestroyBuffer(vk.device, w->vertex_buffer.buffer, NULL);
+}
 
 void wf_draw(WF_OBJ *w)
 {
@@ -960,8 +965,7 @@ void wf_free(WF_OBJ *w)
 	if(w->f)free(w->f);
 	if(w->fn)free(w->fn);
 #ifndef STATIC_TEST
-//	if(w->ab)glDeleteBuffers(1, &w->ab);
-//	if(w->eb)glDeleteBuffers(1, &w->eb);
+	wf_gpu_unload(w);
 #endif
 	WF_MTL *mt, *m = w->m;
 	while(m)

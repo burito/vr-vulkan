@@ -21,6 +21,9 @@ freely, subject to the following restrictions:
    distribution.
 */
 
+#ifndef _VULKAN_H_
+#define _VULKAN_H_
+
 #include <vulkan/vulkan.h>
 
 struct VR_framebuffer {
@@ -80,5 +83,5 @@ int vk_framebuffer(int x, int y, struct VR_framebuffer *fb);
 void vk_framebuffer_free(struct VR_framebuffer *fb);
 int vk_create_buffer(VkBufferUsageFlags usage, VkMemoryPropertyFlags flags, struct VULKAN_BUFFER *x, VkDeviceSize size, void *data);
 
-
+#endif
 

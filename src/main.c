@@ -165,7 +165,8 @@ void main_loop(void)
 		else vr_end();
 	}
 
-	vulkan_loop( (sys_time() - time_start) / (float)sys_ticksecond );
+	if( vulkan_loop( (sys_time() - time_start) / (float)sys_ticksecond ) )
+		killme = 1;
 
 }
 

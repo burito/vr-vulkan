@@ -70,6 +70,7 @@ extern xcb_window_t window;
 #include "log.h"
 
 #include <stdlib.h>
+#include <math.h>
 #include "vulkan_helper.h"
 #include "vulkan.h"
 #include "3dmaths.h"
@@ -97,6 +98,7 @@ VkColorSpaceKHR color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
 struct MESH_UNIFORM_BUFFER {
 	mat4x4 projection;
 	mat4x4 modelview;
+	float time;
 };
 
 WF_OBJ * bunny;
@@ -441,7 +443,7 @@ int vk_framebuffer(int x, int y, struct VR_framebuffer *fb)
 		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// VkStructureType             sType;
 		NULL,						// const void*                 pNext;
 		0,						// VkFramebufferCreateFlags    flags;
-		fb->render_pass,					// VkRenderPass                renderPass;
+		fb->render_pass,				// VkRenderPass                renderPass;
 		2,						// uint32_t                    attachmentCount;
 		&attachments[0],				// const VkImageView*          pAttachments;
 		x,						// uint32_t                    width;
@@ -532,7 +534,8 @@ void vk_mesh_pipeline(void)
 		0,					// uint32_t              binding;
 		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,	// VkDescriptorType      descriptorType;
 		1,					// uint32_t              descriptorCount;
-		VK_SHADER_STAGE_VERTEX_BIT,		// VkShaderStageFlags    stageFlags;
+		VK_SHADER_STAGE_VERTEX_BIT |		// VkShaderStageFlags    stageFlags;
+		VK_SHADER_STAGE_FRAGMENT_BIT,
 		NULL					// const VkSampler*      pImmutableSamplers;
 	};
 
@@ -566,9 +569,9 @@ void vk_mesh_pipeline(void)
 	}
 
 	VkDescriptorBufferInfo desc_buf_info = {
-		vk.ubo_host.buffer,	// VkBuffer        buffer;
+		vk.mesh_ubo_host.buffer,// VkBuffer        buffer;
 		0,			// VkDeviceSize    offset;
-		sizeof(float)		// VkDeviceSize    range;
+		sizeof(struct MESH_UNIFORM_BUFFER)	// VkDeviceSize    range;
 	};
 	VkWriteDescriptorSet desc_write_set = {
 		VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,	// VkStructureType                  sType;
@@ -674,7 +677,7 @@ void vk_mesh_pipeline(void)
 		VK_FALSE,							// VkBool32                                   rasterizerDiscardEnable;
 		VK_POLYGON_MODE_FILL,						// VkPolygonMode                              polygonMode;
 		VK_CULL_MODE_BACK_BIT,						// VkCullModeFlags                            cullMode;
-		VK_FRONT_FACE_COUNTER_CLOCKWISE,				// VkFrontFace                                frontFace;
+		VK_FRONT_FACE_CLOCKWISE,				// VkFrontFace                                frontFace;
 		VK_FALSE,							// VkBool32                                   depthBiasEnable;
 		0.0f,								// float                                      depthBiasConstantFactor;
 		0.0f,								// float                                      depthBiasClamp;
@@ -682,14 +685,15 @@ void vk_mesh_pipeline(void)
 		1.0f								// float                                      lineWidth;		
 	};
 
+	VkSampleMask sample_mask = 0xFFFFFFFF;
 	VkPipelineMultisampleStateCreateInfo multisample_state_crinf = {
 		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType                          sType;
 		NULL,								// const void*                              pNext;
 		0,								// VkPipelineMultisampleStateCreateFlags    flags;
 		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits                    rasterizationSamples;
 		VK_FALSE,							// VkBool32                                 sampleShadingEnable;
-		1.0f,								// float                                    minSampleShading;
-		NULL,								// const VkSampleMask*                      pSampleMask;
+		0.0f,								// float                                    minSampleShading;
+		&sample_mask,							// const VkSampleMask*                      pSampleMask;
 		VK_FALSE,							// VkBool32                                 alphaToCoverageEnable;
 		VK_FALSE							// VkBool32                                 alphaToOneEnable;
 	};
@@ -699,7 +703,7 @@ void vk_mesh_pipeline(void)
 		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType                           sType;
 		NULL,								// const void*                               pNext;
 		0,								// VkPipelineDepthStencilStateCreateFlags    flags;
-		VK_FALSE,							// VkBool32                                  depthTestEnable;
+		VK_TRUE,							// VkBool32                                  depthTestEnable;
 		VK_TRUE,							// VkBool32                                  depthWriteEnable;
 		VK_COMPARE_OP_LESS_OR_EQUAL,					// VkCompareOp                               depthCompareOp;
 		VK_FALSE,							// VkBool32                                  depthBoundsTestEnable;
@@ -790,11 +794,81 @@ void vk_mesh_pipeline(void)
 //		goto VK_INIT_PIPELINE;
 	}
 
+
+	VkAttachmentReference attachment_reference[] = {
+		{
+			0,						// uint32_t         attachment;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout    layout;
+		}, {
+			1,							// uint32_t         attachment;
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL	// VkImageLayout    layout;
+		}
+	};
+
+	VkAttachmentDescription attachment_description[] = {
+		{
+			0,						// VkAttachmentDescriptionFlags    flags;
+			pixel_format,					// VkFormat                        format;
+			VK_SAMPLE_COUNT_1_BIT,				// VkSampleCountFlagBits           samples;
+			VK_ATTACHMENT_LOAD_OP_CLEAR,			// VkAttachmentLoadOp              loadOp;
+			VK_ATTACHMENT_STORE_OP_STORE,			// VkAttachmentStoreOp             storeOp;
+			VK_ATTACHMENT_LOAD_OP_DONT_CARE,		// VkAttachmentLoadOp              stencilLoadOp;
+			VK_ATTACHMENT_STORE_OP_DONT_CARE,		// VkAttachmentStoreOp             stencilStoreOp;
+			VK_IMAGE_LAYOUT_UNDEFINED,	// VkImageLayout                   initialLayout;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout                   finalLayout;
+		},{
+			0,						// VkAttachmentDescriptionFlags    flags;
+			VK_FORMAT_D32_SFLOAT,					// VkFormat                        format;
+			VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits           samples;
+			VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp              loadOp;
+			VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp             storeOp;
+			VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp              stencilLoadOp;
+			VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp             stencilStoreOp;
+			VK_IMAGE_LAYOUT_UNDEFINED,	// VkImageLayout                   initialLayout;
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL	// VkImageLayout                   finalLayout;
+		}
+	};
+
+	VkSubpassDescription subpass_description = {
+		0,					// VkSubpassDescriptionFlags       flags;
+		VK_PIPELINE_BIND_POINT_GRAPHICS,	// VkPipelineBindPoint             pipelineBindPoint;
+		0,					// uint32_t                        inputAttachmentCount;
+		NULL,					// const VkAttachmentReference*    pInputAttachments;
+		1,					// uint32_t                        colorAttachmentCount;
+		&attachment_reference[0],		// const VkAttachmentReference*    pColorAttachments;
+		NULL,					// const VkAttachmentReference*    pResolveAttachments;
+		&attachment_reference[1],		// const VkAttachmentReference*    pDepthStencilAttachment;
+		0,					// uint32_t                        preserveAttachmentCount;
+		NULL					// const uint32_t*                 pPreserveAttachments;
+	};
+
+	VkRenderPassCreateInfo renderpass_crinf = {
+		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureType                   sType;
+		NULL,						// const void*                       pNext;
+		0,						// VkRenderPassCreateFlags           flags;
+		2,						// uint32_t                          attachmentCount;
+		attachment_description,				// const VkAttachmentDescription*    pAttachments;
+		1,						// uint32_t                          subpassCount;
+		&subpass_description,				// const VkSubpassDescription*       pSubpasses;
+		0,						// uint32_t                          dependencyCount;
+		NULL						// const VkSubpassDependency*        pDependencies;
+	};
+	// TODO: do we need this?
+	result = vkCreateRenderPass(vk.device, &renderpass_crinf, NULL, &vk.mesh_renderpass);
+	if( result != VK_SUCCESS )
+	{
+		log_fatal("vkCreateRenderPass = %s", vulkan_result(result));
+//		goto VK_INIT_PIPELINE;
+	}
+
+
+
 }
 
 
 void vk_mesh_pipeline_end(void)
 {
+	vkDestroyRenderPass(vk.device, vk.mesh_renderpass, NULL);
 	vkDestroyPipeline(vk.device, vk.mesh_pipeline, NULL);
 	vkDestroyPipelineLayout(vk.device, vk.mesh_pipeline_layout, NULL);
 	vkDestroyDescriptorSetLayout(vk.device, vk.mesh_ubo_layout, NULL);
@@ -1533,7 +1607,6 @@ int vulkan_init(void)
 		NULL						// const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
 	};
 
-	VkClearValue clear_color[] = { { 0.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 0.0f } };
 	VkImageSubresourceRange image_subresource_range = {
 		VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags    aspectMask;
 		0,				// uint32_t              baseMipLevel;
@@ -1630,15 +1703,15 @@ int vulkan_init(void)
 			&vk.sc_depth[i]);
 		allocated_depthbuffer++;
 
-		VkImageView attachements[] = { vk.sc_imageview[i], vk.sc_depth[i].imageview };
+		VkImageView attachments[] = { vk.sc_imageview[i], vk.sc_depth[i].imageview };
 
 		VkFramebufferCreateInfo fb_crinf = {
 			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// VkStructureType             sType;
 			NULL,						// const void*                 pNext;
 			0,						// VkFramebufferCreateFlags    flags;
-			vk.renderpass,					// VkRenderPass                renderPass;
+			vk.renderpass,				// VkRenderPass                renderPass;
 			2,						// uint32_t                    attachmentCount;
-			attachements,					// const VkImageView*          pAttachments;
+			attachments,					// const VkImageView*          pAttachments;
 			vid_width,					// uint32_t                    width;
 			vid_height,					// uint32_t                    height;
 			1						// uint32_t                    layers;
@@ -1672,17 +1745,18 @@ int vulkan_init(void)
 			VK_ACCESS_MEMORY_READ_BIT,		// VkAccessFlags              srcAccessMask;
 			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,	// VkAccessFlags              dstAccessMask;
 			VK_IMAGE_LAYOUT_UNDEFINED,		// VkImageLayout              oldLayout;
-			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,	// VkImageLayout              newLayout;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout              newLayout;
 			0,					// uint32_t                   srcQueueFamilyIndex;
 			0,					// uint32_t                   dstQueueFamilyIndex;
 			vk.sc_image[i],				// VkImage                    image;
 			image_subresource_range			// VkImageSubresourceRange    subresourceRange;
 		};
 
+		VkClearValue clear_color[] = { { 0.2f, 0.0f, 0.0f, 1.0f }, { 1000.0f, 0.0f, 0.0f, 0.0f } };
 		VkRenderPassBeginInfo render_pass_begin_info = {
 			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType        sType;
 			NULL,						// const void*            pNext;
-			vk.renderpass,					// VkRenderPass           renderPass;
+			vk.renderpass,				// VkRenderPass           renderPass;
 			vk.sc_framebuffer[i],				// VkFramebuffer          framebuffer;
 			{{0,0},{vid_width,vid_height}},			// VkRect2D               renderArea;
 			2,						// uint32_t               clearValueCount;
@@ -1694,7 +1768,7 @@ int vulkan_init(void)
 			NULL,					// const void*                pNext;
 			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,	// VkAccessFlags              srcAccessMask;
 			VK_ACCESS_MEMORY_READ_BIT,		// VkAccessFlags              dstAccessMask;
-			VK_IMAGE_LAYOUT_UNDEFINED,		// VkImageLayout              oldLayout;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,		// VkImageLayout              oldLayout;
 			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,	// VkImageLayout              newLayout;
 			0,					// uint32_t                   srcQueueFamilyIndex;
 			0,					// uint32_t                   dstQueueFamilyIndex;
@@ -1721,8 +1795,7 @@ int vulkan_init(void)
 
 		vkCmdCopyBuffer( vk.sc_commandbuffer[i], vk.mesh_ubo_host.buffer, vk.mesh_ubo_device.buffer, 1, &mesh_buffer_copy[0]);
 
-		VkDeviceSize poffset = 0;
-		vkCmdBindVertexBuffers( vk.sc_commandbuffer[i], 0, 1, &bunny->vertex_buffer.buffer, &poffset );
+
 
 		vkCmdPipelineBarrier(vk.sc_commandbuffer[i],
 			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -1733,9 +1806,14 @@ int vulkan_init(void)
 
 		vkCmdBindPipeline( vk.sc_commandbuffer[i], VK_PIPELINE_BIND_POINT_GRAPHICS, vk.mesh_pipeline);
 		vkCmdBindDescriptorSets( vk.sc_commandbuffer[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
-		vk.mesh_pipeline_layout, 0, 1, &vk.mesh_descriptor_set, 0, NULL);
+			vk.mesh_pipeline_layout, 0, 1, &vk.mesh_descriptor_set, 0, NULL);
 
-		vkCmdDraw( vk.sc_commandbuffer[i], 4, 1, 0, 0 );
+		VkDeviceSize poffset = 0;
+		vkCmdBindVertexBuffers( vk.sc_commandbuffer[i], 0, 1, &bunny->vertex_buffer.buffer, &poffset );
+		vkCmdBindIndexBuffer( vk.sc_commandbuffer[i], bunny->index_buffer.buffer, 0, bunny->index_type );
+		vkCmdDrawIndexed( vk.sc_commandbuffer[i], bunny->nf*3, 1, 0, 0, 0);
+
+//		vkCmdDraw( vk.sc_commandbuffer[i], 4, 1, 0, 0 );
 
 		vkCmdEndRenderPass( vk.sc_commandbuffer[i] );
 
@@ -1870,8 +1948,8 @@ int vulkan_loop(float current_time)
 	}
 //	log_debug("current = %d, next = %d", vk.current_image, next_image);
 
-	float * data;
-	result = vkMapMemory(vk.device, vk.mesh_ubo_host.memory, 0, vk.mesh_ubo_host.size, 0, (void**)&data);
+	void * data;
+	result = vkMapMemory(vk.device, vk.mesh_ubo_host.memory, 0, vk.mesh_ubo_host.size, 0, &data);
 	if(result != VK_SUCCESS)
 	{
 		log_warning("vkMapMemory = %s", vulkan_result(result));
@@ -1879,19 +1957,19 @@ int vulkan_loop(float current_time)
 
 	mat4x4 proj = mat4x4_identity();
 	proj = mat4x4_perspective(1, 30, 1, (float)vid_height / (float)vid_width);
+//	proj = mat4x4_orthographic(0.1, 30, 1, (float)vid_height / (float)vid_width);
 
-	mat4x4 m;
-	m = mat4x4_rot_y(current_time);		// rotate the bunny
+	mat4x4 m = mat4x4_rot_y(current_time);		// rotate the bunny
 	m = mul(m, mat4x4_translate_float(-0.5, 0, -0.5)); // around it's own origin
-	m = mul(mat4x4_translate_float( 0, 0, -2), m);	// move it 2 metres infront of the origin
+	m = mul(mat4x4_translate_float( 0, -0.5, -2), m);	// move it 2 metres infront of the origin
+	m = mul( mat4x4_rot_z(3.141), m);
 
-	struct MESH_UNIFORM_BUFFER ident = {
-		proj,
-		m
-	};
+	struct MESH_UNIFORM_BUFFER *ubo = data;
 
-	memcpy(data, &ident, sizeof(struct MESH_UNIFORM_BUFFER));
-//	data[0] = current_time;
+	ubo->modelview = m;
+	ubo->projection = proj;
+	ubo->time = current_time;
+
 	vkUnmapMemory(vk.device, vk.mesh_ubo_host.memory);
 
 	VkPipelineStageFlags vkflags = VK_PIPELINE_STAGE_TRANSFER_BIT;

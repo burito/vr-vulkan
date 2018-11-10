@@ -6,14 +6,21 @@ layout (location = 1) in vec2 inUV;
 //layout (binding = 1) uniform sampler2D texture;
 
 
+layout (binding = 0) uniform UBO
+{
+	mat4 projection;
+	mat4 modelview;
+	float time;
+} ubo;
+
 layout (location = 0) out vec4 outColor;
 
 
 void main() {
 //	vec4 color = texture(texture, inUV);
 
-//	vec3 N = normalize(inNormal) + vec3(1) * 0.5;
+	vec3 N = normalize(inNormal) + vec3(1) * 0.5;
 
-//	outColor = vec4(N, 1);
-	outColor = vec4(1);
+	outColor = vec4(N, 1.0);
+
 }

@@ -60,6 +60,7 @@ typedef struct WF_OBJ
 	char **groups;
 	int *sgroups;
 	struct VULKAN_BUFFER vertex_buffer, index_buffer;
+	VkIndexType index_type;
 //	uint32_t va, ab, eb;
 	void (*draw)(struct WF_OBJ*);
 } WF_OBJ;

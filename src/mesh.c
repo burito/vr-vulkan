@@ -472,7 +472,7 @@ void wf_gpu_load(WF_OBJ *w)
 	struct VULKAN_BUFFER vertex_buffer;
 	struct VULKAN_BUFFER index_buffer;
 	VkDeviceSize vertex_buffer_size = w->nv * 32;
-	VkDeviceSize index_buffer_size = 4;
+	VkDeviceSize index_buffer_size = w->nf*12;
 
 	vk_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
@@ -482,7 +482,7 @@ void wf_gpu_load(WF_OBJ *w)
 	vk_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
 		VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		&index_staging, index_buffer_size, w->p );
+		&index_staging, index_buffer_size, w->vf );
 
 	vk_buffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT |
 		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
@@ -568,6 +568,8 @@ void wf_gpu_load(WF_OBJ *w)
 	vkDestroyBuffer(vk.device, index_staging.buffer, NULL);
 	vkFreeMemory(vk.device, vertex_staging.memory, NULL);
 	vkDestroyBuffer(vk.device, vertex_staging.buffer, NULL);
+
+	w->index_type = VK_INDEX_TYPE_UINT32;
 }
 
 void wf_gpu_unload(WF_OBJ *w)

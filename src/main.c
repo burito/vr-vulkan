@@ -42,8 +42,9 @@ long long time_start = 0;
 float step = 0.0f;
 
 
-WF_OBJ * bunny;
+
 /*
+WF_OBJ * bunny;
 IMG * img;
 GLSLSHADER *shader;
 */
@@ -73,8 +74,7 @@ int main_init(int argc, char *argv[])
 		return 1;
 	}
 //	vr_init();
-	vk_mesh_pipeline();
-	bunny = wf_load("data/stanford-bunny.obj");
+
 
 	log_info("Initialised : OK");
 	return 0;   // it worked!
@@ -83,8 +83,6 @@ int main_init(int argc, char *argv[])
 
 void main_end(void)
 {
-	vk_mesh_pipeline_end();
-	wf_free(bunny);
 	vulkan_end();
 	log_info("Shutdown    : OK");
 }

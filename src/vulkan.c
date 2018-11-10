@@ -73,12 +73,15 @@ extern xcb_window_t window;
 #include "vulkan_helper.h"
 #include "vulkan.h"
 #include "3dmaths.h"
+#include "mesh.h"
 
 #include "vert_spv.h"
 #include "frag_spv.h"
 
 #include "mesh_vert_spv.h"
 #include "mesh_frag_spv.h"
+
+
 
 
 extern int vid_width;
@@ -96,7 +99,7 @@ struct MESH_UNIFORM_BUFFER {
 	mat4x4 modelview;
 };
 
-
+WF_OBJ * bunny;
 struct VULKAN_HANDLES vk;
 
 int find_memory_type(VkMemoryRequirements requirements, VkMemoryPropertyFlags wanted)
@@ -499,13 +502,13 @@ void vk_mesh_pipeline(void)
 		(const uint32_t*)build_mesh_frag_spv		// const uint32_t*              pCode;
 	};
 
-	vkCreateShaderModule(vk.device, &shader_vert_crinf, NULL, &vk.mesh_shader_vert);
+	result = vkCreateShaderModule(vk.device, &shader_vert_crinf, NULL, &vk.mesh_shader_vert);
 	if( result != VK_SUCCESS )
 	{
 		log_fatal("vkCreateShaderModule(vertex) = %s", vulkan_result(result));
 //		goto VK_INIT_CREATE_SHADER_VERT;
 	}
-	vkCreateShaderModule(vk.device, &shader_frag_crinf, NULL, &vk.mesh_shader_frag);
+	result = vkCreateShaderModule(vk.device, &shader_frag_crinf, NULL, &vk.mesh_shader_frag);
 	if( result != VK_SUCCESS )
 	{
 		log_fatal("vkCreateShaderModule(fragment) = %s", vulkan_result(result));
@@ -556,8 +559,7 @@ void vk_mesh_pipeline(void)
 		&vk.mesh_ubo_layout				// const VkDescriptorSetLayout*    pSetLayouts;
 	};
 
-	VkDescriptorSet desc_set;
-	result = vkAllocateDescriptorSets(vk.device, &desc_set_alloc_info, &desc_set);
+	result = vkAllocateDescriptorSets(vk.device, &desc_set_alloc_info, &vk.mesh_descriptor_set);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkAllocateDescriptorSets = %s", vulkan_result(result));
@@ -571,7 +573,7 @@ void vk_mesh_pipeline(void)
 	VkWriteDescriptorSet desc_write_set = {
 		VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,	// VkStructureType                  sType;
 		NULL,					// const void*                      pNext;
-		desc_set,				// VkDescriptorSet                  dstSet;
+		vk.mesh_descriptor_set,			// VkDescriptorSet                  dstSet;
 		0,					// uint32_t                         dstBinding;
 		0,					// uint32_t                         dstArrayElement;
 		1,					// uint32_t                         descriptorCount;
@@ -697,7 +699,7 @@ void vk_mesh_pipeline(void)
 		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType                           sType;
 		NULL,								// const void*                               pNext;
 		0,								// VkPipelineDepthStencilStateCreateFlags    flags;
-		VK_TRUE,							// VkBool32                                  depthTestEnable;
+		VK_FALSE,							// VkBool32                                  depthTestEnable;
 		VK_TRUE,							// VkBool32                                  depthWriteEnable;
 		VK_COMPARE_OP_LESS_OR_EQUAL,					// VkCompareOp                               depthCompareOp;
 		VK_FALSE,							// VkBool32                                  depthBoundsTestEnable;
@@ -1319,8 +1321,7 @@ int vulkan_init(void)
 		&vk.layout_ubo					// const VkDescriptorSetLayout*    pSetLayouts;
 	};
 
-	VkDescriptorSet desc_set;
-	result = vkAllocateDescriptorSets(vk.device, &desc_set_alloc_info, &desc_set);
+	result = vkAllocateDescriptorSets(vk.device, &desc_set_alloc_info, &vk.descriptor_set);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkAllocateDescriptorSets = %s", vulkan_result(result));
@@ -1334,7 +1335,7 @@ int vulkan_init(void)
 	VkWriteDescriptorSet desc_write_set = {
 		VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,	// VkStructureType                  sType;
 		NULL,					// const void*                      pNext;
-		desc_set,				// VkDescriptorSet                  dstSet;
+		vk.descriptor_set,			// VkDescriptorSet                  dstSet;
 		0,					// uint32_t                         dstBinding;
 		0,					// uint32_t                         dstArrayElement;
 		1,					// uint32_t                         descriptorCount;
@@ -1591,6 +1592,12 @@ int vulkan_init(void)
 	int allocated_semaphores = 0;
 	int allocated_depthbuffer = 0;
 
+//	log_debug("this one");
+
+	vk_mesh_pipeline();
+	bunny = wf_load("data/stanford-bunny.obj");
+
+
 	for( int i=0; i<vk.display_buffer_count; i++)
 	{
 		VkImageViewCreateInfo image_view_crinf = {
@@ -1700,13 +1707,22 @@ int vulkan_init(void)
 			0,		// VkDeviceSize    dstOffset;
 			ubo_buffer_size	// VkDeviceSize    size;
 		};
-
+		VkBufferCopy mesh_buffer_copy[1] = {
+			0,		// VkDeviceSize    srcOffset;
+			0,		// VkDeviceSize    dstOffset;
+			vk.mesh_ubo_host.size	// VkDeviceSize    size;
+		};
 
 		// fill the command buffer with commands
 		result = vkBeginCommandBuffer(vk.sc_commandbuffer[i], &vk_cmdbegin);
 		if( result != VK_SUCCESS ) { log_warning("vkBeginCommandBuffer = %s", vulkan_result(result)); }
 		
-		vkCmdCopyBuffer( vk.sc_commandbuffer[i], vk.ubo_host.buffer, vk.ubo_device.buffer, 1, &buffer_copy[0]);
+//		vkCmdCopyBuffer( vk.sc_commandbuffer[i], vk.ubo_host.buffer, vk.ubo_device.buffer, 1, &buffer_copy[0]);
+
+		vkCmdCopyBuffer( vk.sc_commandbuffer[i], vk.mesh_ubo_host.buffer, vk.mesh_ubo_device.buffer, 1, &mesh_buffer_copy[0]);
+
+		VkDeviceSize poffset = 0;
+		vkCmdBindVertexBuffers( vk.sc_commandbuffer[i], 0, 1, &bunny->vertex_buffer.buffer, &poffset );
 
 		vkCmdPipelineBarrier(vk.sc_commandbuffer[i],
 			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -1715,9 +1731,9 @@ int vulkan_init(void)
 
 		vkCmdBeginRenderPass( vk.sc_commandbuffer[i], &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkCmdBindPipeline( vk.sc_commandbuffer[i], VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline);
+		vkCmdBindPipeline( vk.sc_commandbuffer[i], VK_PIPELINE_BIND_POINT_GRAPHICS, vk.mesh_pipeline);
 		vkCmdBindDescriptorSets( vk.sc_commandbuffer[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
-		vk.pipeline_layout, 0, 1, &desc_set, 0, NULL);
+		vk.mesh_pipeline_layout, 0, 1, &vk.mesh_descriptor_set, 0, NULL);
 
 		vkCmdDraw( vk.sc_commandbuffer[i], 4, 1, 0, 0 );
 
@@ -1794,6 +1810,11 @@ void vulkan_end(void)
 {
 	VkResult result;
 	result = vkQueueWaitIdle(vk.queue);
+
+	vk_mesh_pipeline_end();
+	wf_free(bunny);
+
+
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkQueueWaitIdle = %s", vulkan_result(result));
@@ -1850,13 +1871,28 @@ int vulkan_loop(float current_time)
 //	log_debug("current = %d, next = %d", vk.current_image, next_image);
 
 	float * data;
-	result = vkMapMemory(vk.device, vk.ubo_host.memory, 0, sizeof(float), 0, (void**)&data);
+	result = vkMapMemory(vk.device, vk.mesh_ubo_host.memory, 0, vk.mesh_ubo_host.size, 0, (void**)&data);
 	if(result != VK_SUCCESS)
 	{
 		log_warning("vkMapMemory = %s", vulkan_result(result));
 	}
-	data[0] = current_time;
-	vkUnmapMemory(vk.device, vk.ubo_host.memory);
+
+	mat4x4 proj = mat4x4_identity();
+	proj = mat4x4_perspective(1, 30, 1, (float)vid_height / (float)vid_width);
+
+	mat4x4 m;
+	m = mat4x4_rot_y(current_time);		// rotate the bunny
+	m = mul(m, mat4x4_translate_float(-0.5, 0, -0.5)); // around it's own origin
+	m = mul(mat4x4_translate_float( 0, 0, -2), m);	// move it 2 metres infront of the origin
+
+	struct MESH_UNIFORM_BUFFER ident = {
+		proj,
+		m
+	};
+
+	memcpy(data, &ident, sizeof(struct MESH_UNIFORM_BUFFER));
+//	data[0] = current_time;
+	vkUnmapMemory(vk.device, vk.mesh_ubo_host.memory);
 
 	VkPipelineStageFlags vkflags = VK_PIPELINE_STAGE_TRANSFER_BIT;
 	VkSubmitInfo submit_info = {

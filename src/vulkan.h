@@ -64,6 +64,7 @@ struct VULKAN_HANDLES {
 
 	VkDescriptorPool descriptor_pool;
 	VkDescriptorSetLayout layout_ubo;
+	VkDescriptorSet descriptor_set;
 	struct VULKAN_BUFFER ubo_host;
 	struct VULKAN_BUFFER ubo_device;
 	VkShaderModule shader_vert;
@@ -84,6 +85,7 @@ struct VULKAN_HANDLES {
 	struct VULKAN_BUFFER mesh_ubo_host;
 	struct VULKAN_BUFFER mesh_ubo_device;
 	VkDescriptorSetLayout mesh_ubo_layout;
+	VkDescriptorSet mesh_descriptor_set;
 	VkRenderPass mesh_renderpass;
 	VkPipelineLayout mesh_pipeline_layout;
 	VkPipeline mesh_pipeline;

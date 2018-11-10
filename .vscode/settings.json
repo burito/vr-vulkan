@@ -12,6 +12,8 @@
 		"log.h": "c",
 		"system_error": "c",
 		"xlocale": "c",
-		"vk_platform.h": "c"
+		"vk_platform.h": "c",
+		"initializer_list": "c",
+		"string_view": "c"
 	}
 }

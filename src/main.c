@@ -73,7 +73,7 @@ int main_init(int argc, char *argv[])
 		return 1;
 	}
 //	vr_init();
-
+	vk_mesh_pipeline();
 	bunny = wf_load("data/stanford-bunny.obj");
 
 	log_info("Initialised : OK");
@@ -83,6 +83,7 @@ int main_init(int argc, char *argv[])
 
 void main_end(void)
 {
+	vk_mesh_pipeline_end();
 	wf_free(bunny);
 	vulkan_end();
 	log_info("Shutdown    : OK");

@@ -26,17 +26,20 @@ freely, subject to the following restrictions:
 
 #include <vulkan/vulkan.h>
 
+
+struct VULKAN_IMAGEBUFFER {
+	VkImage image;
+	VkDeviceMemory memory;
+	VkImageView imageview;
+};
+
 struct VR_framebuffer {
-	VkImage color_image;
-	VkImageLayout color_layout;
-	VkDeviceMemory color_memory;
-	VkImageView color_view;
-	VkImage stencil_image;
-	VkImageLayout stencil_layout;
-	VkDeviceMemory stencil_memory;
-	VkImageView stencil_view;
+	struct VULKAN_IMAGEBUFFER color;
+	struct VULKAN_IMAGEBUFFER depth;
 	VkRenderPass render_pass;
 	VkFramebuffer framebuffer;
+	VkImageLayout color_layout;
+	VkImageLayout stencil_layout;
 };
 
 struct VULKAN_BUFFER {
@@ -55,18 +58,16 @@ struct VULKAN_HANDLES {
 	VkPipeline pipeline;
 	VkPipelineLayout pipeline_layout;
 	VkQueue queue;
-	VkDeviceMemory ubo_client_mem;
-	VkDeviceMemory ubo_host_mem;
-	VkBuffer ubo_client_buffer;
-	VkBuffer ubo_host_buffer;
 
 	VkPhysicalDeviceMemoryProperties device_mem_props;
 	VkPhysicalDeviceProperties device_properties;
 
 	VkDescriptorPool descriptor_pool;
 	VkDescriptorSetLayout layout_ubo;
-	VkShaderModule shader_module_vert;
-	VkShaderModule shader_module_frag;
+	struct VULKAN_BUFFER ubo_host;
+	struct VULKAN_BUFFER ubo_device;
+	VkShaderModule shader_vert;
+	VkShaderModule shader_frag;
 
 	uint32_t display_buffer_count;
 	VkSemaphore *sc_semaphore;
@@ -74,14 +75,29 @@ struct VULKAN_HANDLES {
 	VkImage *sc_image;
 	VkImageView *sc_imageview;
 	VkFramebuffer *sc_framebuffer;
+	struct VULKAN_IMAGEBUFFER *sc_depth;
 
 	int current_image;
+
+	VkShaderModule mesh_shader_vert;
+	VkShaderModule mesh_shader_frag;
+	struct VULKAN_BUFFER mesh_ubo_host;
+	struct VULKAN_BUFFER mesh_ubo_device;
+	VkDescriptorSetLayout mesh_ubo_layout;
+	VkRenderPass mesh_renderpass;
+	VkPipelineLayout mesh_pipeline_layout;
+	VkPipeline mesh_pipeline;
 };
 extern struct VULKAN_HANDLES vk;
 
 int vk_framebuffer(int x, int y, struct VR_framebuffer *fb);
-void vk_framebuffer_free(struct VR_framebuffer *fb);
-int vk_create_buffer(VkBufferUsageFlags usage, VkMemoryPropertyFlags flags, struct VULKAN_BUFFER *x, VkDeviceSize size, void *data);
+void vk_framebuffer_end(struct VR_framebuffer *fb);
+VkResult vk_buffer(VkBufferUsageFlags usage, VkMemoryPropertyFlags flags, struct VULKAN_BUFFER *x, VkDeviceSize size, void *data);
+void vk_buffer_end(struct VULKAN_BUFFER *x);
+
+VkResult vk_imagebuffer(int x, int y, VkFormat format, VkImageUsageFlags usage, VkImageLayout layout, VkImageAspectFlags aspect_mask, struct VULKAN_IMAGEBUFFER *b);
+void vk_imagebuffer_end(struct VULKAN_IMAGEBUFFER *x);
+
 
 #endif
 

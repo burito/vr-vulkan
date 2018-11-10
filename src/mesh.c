@@ -474,22 +474,22 @@ void wf_gpu_load(WF_OBJ *w)
 	VkDeviceSize vertex_buffer_size = w->nv * 32;
 	VkDeviceSize index_buffer_size = 4;
 
-	vk_create_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+	vk_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
 		VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		&vertex_staging, vertex_buffer_size, w->p );
 
-	vk_create_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+	vk_buffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
 		VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		&index_staging, index_buffer_size, w->p );
 
-	vk_create_buffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+	vk_buffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT |
 		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		&w->vertex_buffer, vertex_staging.size, NULL);
 
-	vk_create_buffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+	vk_buffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT |
 		VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		&w->index_buffer, index_staging.size, NULL);

@@ -98,7 +98,7 @@ vulkan.bin: $(MAC_OBJS) libMoltenVK.dylib libopenvr_api.dylib
 	$(CC) $(CFLAGS) $(MAC_LIBS) $^ -o $@
 
 
-$(BUILD_DIR)/vulkan.o: vulkan.c build/vert_spv.h build/frag_spv.h
+$(BUILD_DIR)/vulkan.o: vulkan.c build/vert_spv.h build/frag_spv.h build/mesh_vert_spv.h build/mesh_frag_spv.h
 
 
 # build the shaders - nasty hack
@@ -112,6 +112,19 @@ build/vert_spv.h : build/vert.spv
 	xxd -i $< > $@ 
 
 build/frag_spv.h : build/frag.spv
+	xxd -i $< > $@
+
+# build the mesh shaders - nasty hack continues!
+build/mesh_frag.spv : mesh_shader.frag
+	$(GLSLANG) -V -H $< -o $@ > build/mesh_frag_spv.h.txt
+
+build/mesh_vert.spv : mesh_shader.vert
+	$(GLSLANG) -V -H $< -o $@ > build/mesh_vert_spv.h.txt
+
+build/mesh_vert_spv.h : build/mesh_vert.spv
+	xxd -i $< > $@ 
+
+build/mesh_frag_spv.h : build/mesh_frag.spv
 	xxd -i $< > $@
 
 # start build the win32 Resource File (contains the icon)

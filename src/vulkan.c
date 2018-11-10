@@ -77,6 +77,10 @@ extern xcb_window_t window;
 #include "vert_spv.h"
 #include "frag_spv.h"
 
+#include "mesh_vert_spv.h"
+#include "mesh_frag_spv.h"
+
+
 extern int vid_width;
 extern int vid_height;
 
@@ -87,13 +91,10 @@ VkColorSpaceKHR color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
 //VkFormat pixel_format = VK_FORMAT_R16G16B16A16_SFLOAT;
 //VkFormat pixel_format = VK_FORMAT_R64G64B64A64_UINT;
 
-struct UNIFORM_BUFFER {
+struct MESH_UNIFORM_BUFFER {
 	mat4x4 projection;
 	mat4x4 modelview;
 };
-
-
-
 
 
 struct VULKAN_HANDLES vk;
@@ -113,7 +114,7 @@ int find_memory_type(VkMemoryRequirements requirements, VkMemoryPropertyFlags wa
 	return 0;
 }
 
-int vk_create_buffer(VkBufferUsageFlags usage, VkMemoryPropertyFlags flags, struct VULKAN_BUFFER *x, VkDeviceSize size, void *data)
+VkResult vk_buffer(VkBufferUsageFlags usage, VkMemoryPropertyFlags flags, struct VULKAN_BUFFER *x, VkDeviceSize size, void *data)
 {
 	VkResult result;
 	VkBufferCreateInfo buffer_crinf = {
@@ -172,14 +173,20 @@ int vk_create_buffer(VkBufferUsageFlags usage, VkMemoryPropertyFlags flags, stru
 		goto VK_CB_BIND;
 	}
 
-	return 0;
+	return VK_SUCCESS;
 VK_CB_BIND:
 VK_CB_MAP:
 	vkFreeMemory(vk.device, x->memory, NULL);
 VK_CB_ALLOCATE:
 	vkDestroyBuffer(vk.device, x->buffer, NULL);
 VK_CB_BUFFER:
-	return 1;
+	return result;
+}
+
+void vk_buffer_end(struct VULKAN_BUFFER *x)
+{
+	vkFreeMemory(vk.device, x->memory, NULL);
+	vkDestroyBuffer(vk.device, x->buffer, NULL);
 }
 
 
@@ -215,7 +222,15 @@ int vk_malloc_swapchain(struct VULKAN_HANDLES *vk)
 		log_fatal("malloc(vk->sc_commandbuffer)");
 		goto VK_MALLOC_COMMANDBUFFER;
 	}
+	vk->sc_depth = malloc(sizeof(struct VULKAN_IMAGEBUFFER) * vk->display_buffer_count);
+	if( vk->sc_depth == NULL )
+	{
+		log_fatal("malloc(vk->sc_depth)");
+		goto VK_MALLOC_DEPTH;
+	}
 	return 0;
+VK_MALLOC_DEPTH:
+	free(vk->sc_commandbuffer);
 VK_MALLOC_COMMANDBUFFER:
 	free(vk->sc_semaphore);
 VK_MALLOC_SEMAPHORE:
@@ -228,9 +243,7 @@ VK_MALLOC_IMAGE:
 	return 1;
 }
 
-
-
-int vk_framebuffer(int x, int y, struct VR_framebuffer *fb)
+VkResult vk_imagebuffer(int x, int y, VkFormat format, VkImageUsageFlags usage, VkImageLayout layout, VkImageAspectFlags aspect_mask, struct VULKAN_IMAGEBUFFER *b)
 {
 	VkResult result;
 	VkImageCreateInfo image_crinf = {
@@ -238,136 +251,143 @@ int vk_framebuffer(int x, int y, struct VR_framebuffer *fb)
 		NULL,					// const void*              pNext;
 		0,					// VkImageCreateFlags       flags;
 		VK_IMAGE_TYPE_2D,			// VkImageType              imageType;
-		pixel_format,				// VkFormat                 format;
+		format,					// VkFormat                 format;
 		{ x, y, 1},				// VkExtent3D               extent;
 		1,					// uint32_t                 mipLevels;
 		1,					// uint32_t                 arrayLayers;
 		VK_SAMPLE_COUNT_1_BIT,			// VkSampleCountFlagBits    samples;
 		VK_IMAGE_TILING_OPTIMAL,		// VkImageTiling            tiling;
-		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |	// VkImageUsageFlags        usage;
-			VK_IMAGE_USAGE_SAMPLED_BIT |
-			VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+		usage,					// VkImageUsageFlags        usage;
 		VK_SHARING_MODE_EXCLUSIVE,		// VkSharingMode            sharingMode;
 		0,					// uint32_t                 queueFamilyIndexCount;
 		NULL,					// const uint32_t*          pQueueFamilyIndices;
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL// VkImageLayout            initialLayout;
+		layout					// VkImageLayout            initialLayout;
 	};
-	// create color buffer
 
-	result = vkCreateImage(vk.device, &image_crinf, NULL, &fb->color_image);
+	result = vkCreateImage(vk.device, &image_crinf, NULL, &b->image);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkCreateImage = %s", vulkan_result(result));
-		goto VK_FB_IMAGE;
+		goto VK_IB_IMAGE;
 	}
-
-	VkMemoryRequirements mem_req;
-	vkGetImageMemoryRequirements(vk.device, fb->color_image, &mem_req);
-	int mem_type = find_memory_type(mem_req, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	VkMemoryRequirements requirements;
+	vkGetImageMemoryRequirements(vk.device, b->image, &requirements);
+	uint32_t memory_type = find_memory_type(requirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 	VkMemoryAllocateInfo alloc_info = {
 		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// VkStructureType    sType;
 		NULL,					// const void*        pNext;
-		mem_req.size,				// VkDeviceSize       allocationSize;
-		mem_type				// uint32_t           memoryTypeIndex;
+		requirements.size,			// VkDeviceSize       allocationSize;
+		memory_type				// uint32_t           memoryTypeIndex;
 	};
-
-	result = vkAllocateMemory(vk.device, &alloc_info, NULL, &fb->color_memory);
+	result = vkAllocateMemory(vk.device, &alloc_info, NULL, &b->memory);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkAllocateMemory = %s", vulkan_result(result));
-		goto VK_FB_IMG_MEM;
+		goto VK_IB_ALLOC;
 	}
-	result = vkBindImageMemory(vk.device, fb->color_image, fb->color_memory, 0);
+	result = vkBindImageMemory(vk.device, b->image, b->memory, 0);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkBindImageMemory = %s", vulkan_result(result));
-		goto VK_FB_IMG_MEM;
+		goto VK_IB_BIND;
 	}
 
 	VkImageViewCreateInfo image_view_crinf = {
 		VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,	// VkStructureType            sType;
 		NULL,						// const void*                pNext;
 		0,						// VkImageViewCreateFlags     flags;
-		fb->color_image,				// VkImage                    image;
+		b->image,					// VkImage                    image;
 		VK_IMAGE_VIEW_TYPE_2D,				// VkImageViewType            viewType;
-		pixel_format,					// VkFormat                   format;
+		format,						// VkFormat                   format;
 		{	VK_COMPONENT_SWIZZLE_IDENTITY,		// VkComponentMapping         components;
 			VK_COMPONENT_SWIZZLE_IDENTITY,
 			VK_COMPONENT_SWIZZLE_IDENTITY,
-			VK_COMPONENT_SWIZZLE_IDENTITY },	// VkImageSubresourceRange    subresourceRange;
-		{ VK_IMAGE_ASPECT_COLOR_BIT,0,1,0,1 }
+			VK_COMPONENT_SWIZZLE_IDENTITY		// VkImageSubresourceRange    subresourceRange;
+		},{ 	aspect_mask,			// VkImageAspectFlags    aspectMask;
+			0,				// uint32_t              baseMipLevel;
+			1,				// uint32_t              levelCount;
+			0,				// uint32_t              baseArrayLayer;
+			1				// uint32_t              layerCount;
+		}
 	};
 
-	VkImageView image_view_color;
-	result = vkCreateImageView(vk.device, &image_view_crinf, NULL, &fb->color_view);
+	VkImageView imageview;
+	result = vkCreateImageView(vk.device, &image_view_crinf, NULL, &b->imageview);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkCreateImageView = %s", vulkan_result(result));
-		goto VK_FB_IMG_VIEW;
+		goto VK_IB_IMAGEVIEW;
 	}
+	return VK_SUCCESS;
 
-	// create stencil buffer
-	image_crinf.format = VK_FORMAT_D32_SFLOAT;
-	image_crinf.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-	VkImage image_stencil;
-	result = vkCreateImage(vk.device, &image_crinf, NULL, &fb->stencil_image);
+	vkDestroyImageView(vk.device, b->imageview, NULL);
+VK_IB_IMAGEVIEW:
+VK_IB_BIND:
+	vkFreeMemory(vk.device, b->memory, NULL);
+VK_IB_ALLOC:
+	vkDestroyImage(vk.device, b->image, NULL);
+VK_IB_IMAGE:
+	return result;
+}
+
+void vk_imagebuffer_end(struct VULKAN_IMAGEBUFFER *x)
+{
+	vkDestroyImageView(vk.device, x->imageview, NULL);
+	vkFreeMemory(vk.device, x->memory, NULL);
+	vkDestroyImage(vk.device, x->image, NULL);
+}
+
+int vk_framebuffer(int x, int y, struct VR_framebuffer *fb)
+{
+	VkResult result;
+
+	result = vk_imagebuffer(x, y,
+		pixel_format,
+		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_ASPECT_COLOR_BIT,
+		&fb->color
+	);
 	if( result != VK_SUCCESS )
 	{
-		log_warning("vkCreateImage = %s", vulkan_result(result));
-		goto VK_FB_STENCIL;
+		log_warning("vk_imagebuffer = %s", vulkan_result(result));
+		goto VK_FB_COLORBUFFER;
 	}
 
-	vkGetImageMemoryRequirements(vk.device, fb->stencil_image, &mem_req);
-	mem_type = find_memory_type(mem_req, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-	alloc_info.allocationSize = mem_req.size;
-	alloc_info.memoryTypeIndex = mem_type;
-
-	result = vkAllocateMemory(vk.device, &alloc_info, NULL, &fb->stencil_memory);
+	result = vk_imagebuffer(x, y,
+		VK_FORMAT_D32_SFLOAT,
+		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_ASPECT_DEPTH_BIT,
+		&fb->depth
+	);
 	if( result != VK_SUCCESS )
 	{
-		log_warning("vkAllocateMemory = %s", vulkan_result(result));
-		goto VK_FB_STEN_MEM;
-	}
-	result = vkBindImageMemory(vk.device, fb->stencil_image, fb->stencil_memory, 0);
-	if( result != VK_SUCCESS )
-	{
-		log_warning("vkBindImageMemory = %s", vulkan_result(result));
-		goto VK_FB_STEN_MEM;
-	}
-
-	image_view_crinf.image = fb->stencil_image;
-	image_view_crinf.format = image_crinf.format;
-	image_view_crinf.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-	VkImageView image_view_stencil;
-	result = vkCreateImageView(vk.device, &image_view_crinf, NULL, &fb->stencil_view);
-	if( result != VK_SUCCESS )
-	{
-		log_warning("vkCreateImageView = %s", vulkan_result(result));
-		goto VK_FB_STEN_VIEW;
+		log_warning("vk_imagebuffer = %s", vulkan_result(result));
+		goto VK_FB_DEPTHBUFFER;
 	}
 
 	// create renderpass
 	VkAttachmentDescription attach_desc[] = {{
 			0,						// VkAttachmentDescriptionFlags    flags;
 			pixel_format,					// VkFormat                        format;
-			image_crinf.samples,				// VkSampleCountFlagBits           samples;
+			VK_SAMPLE_COUNT_1_BIT,				// VkSampleCountFlagBits           samples;
 			VK_ATTACHMENT_LOAD_OP_CLEAR,			// VkAttachmentLoadOp              loadOp;
 			VK_ATTACHMENT_STORE_OP_STORE,			// VkAttachmentStoreOp             storeOp;
 			VK_ATTACHMENT_LOAD_OP_DONT_CARE,		// VkAttachmentLoadOp              stencilLoadOp;
 			VK_ATTACHMENT_STORE_OP_DONT_CARE,		// VkAttachmentStoreOp             stencilStoreOp;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout                   initialLayout;
+			VK_IMAGE_LAYOUT_UNDEFINED,	// VkImageLayout                   initialLayout;
 			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout                   finalLayout;
 		},{
-		0,							// VkAttachmentDescriptionFlags    flags;
+			0,							// VkAttachmentDescriptionFlags    flags;
 			VK_FORMAT_D32_SFLOAT,					// VkFormat                        format;
-			image_crinf.samples,					// VkSampleCountFlagBits           samples;
+			VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits           samples;
 			VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp              loadOp;
 			VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp             storeOp;
 			VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp              stencilLoadOp;
 			VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp             stencilStoreOp;
-			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,	// VkImageLayout                   initialLayout;
+			VK_IMAGE_LAYOUT_UNDEFINED,	// VkImageLayout                   initialLayout;
 			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL	// VkImageLayout                   finalLayout;
 		}
 	};
@@ -413,7 +433,7 @@ int vk_framebuffer(int x, int y, struct VR_framebuffer *fb)
 		goto VK_FB_RENDERPASS;
 	}
 
-	VkImageView attachments[2] = { fb->color_view, fb->stencil_view };
+	VkImageView attachments[2] = { fb->color.imageview, fb->depth.imageview };
 	VkFramebufferCreateInfo fb_crinf = {
 		VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// VkStructureType             sType;
 		NULL,						// const void*                 pNext;
@@ -437,37 +457,325 @@ int vk_framebuffer(int x, int y, struct VR_framebuffer *fb)
 	fb->stencil_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 	return 0;
 
-VK_FB_FRAMEBUFFER:
 	vkDestroyFramebuffer(vk.device, fb->framebuffer, NULL);
-VK_FB_RENDERPASS:
+VK_FB_FRAMEBUFFER:
 	vkDestroyRenderPass(vk.device, fb->render_pass, NULL);
-VK_FB_STEN_VIEW:
-	vkDestroyImageView(vk.device, fb->stencil_view, NULL);
-VK_FB_STEN_MEM:
-	vkFreeMemory(vk.device, fb->stencil_memory, NULL);
-VK_FB_STENCIL:
-	vkDestroyImage(vk.device, fb->stencil_image, NULL);
-VK_FB_IMG_VIEW:
-	vkDestroyImageView(vk.device, fb->color_view, NULL);
-VK_FB_IMG_MEM:
-	vkFreeMemory(vk.device, fb->color_memory, NULL);
-VK_FB_IMAGE:
-	vkDestroyImage(vk.device, fb->color_image, NULL);
-	return 1;
+VK_FB_RENDERPASS:
+	vk_imagebuffer_end(&fb->depth);
+VK_FB_DEPTHBUFFER:
+	vk_imagebuffer_end(&fb->color);
+VK_FB_COLORBUFFER:	
+	return result;
 }
 
-void vk_framebuffer_free(struct VR_framebuffer *fb)
+void vk_framebuffer_end(struct VR_framebuffer *fb)
 {
 	vkDestroyFramebuffer(vk.device, fb->framebuffer, NULL);
 	vkDestroyRenderPass(vk.device, fb->render_pass, NULL);
 
-	vkDestroyImageView(vk.device, fb->stencil_view, NULL);
-	vkFreeMemory(vk.device, fb->stencil_memory, NULL);
-	vkDestroyImage(vk.device, fb->stencil_image, NULL);
+	vk_imagebuffer_end(&fb->depth);
+	vk_imagebuffer_end(&fb->color);
+}
 
-	vkDestroyImageView(vk.device, fb->color_view, NULL);
-	vkFreeMemory(vk.device, fb->color_memory, NULL);
-	vkDestroyImage(vk.device, fb->color_image, NULL);
+
+void vk_mesh_pipeline(void)
+{
+	VkResult result;
+	// create the shaders
+
+	VkShaderModuleCreateInfo shader_vert_crinf = {
+		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,	// VkStructureType              sType;
+		NULL,						// const void*                  pNext;
+		0,						// VkShaderModuleCreateFlags    flags;
+		build_mesh_vert_spv_len,			// size_t                       codeSize;
+		(const uint32_t*)build_mesh_vert_spv		// const uint32_t*              pCode;
+	};
+
+	VkShaderModuleCreateInfo shader_frag_crinf = {
+		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,	// VkStructureType              sType;
+		NULL,						// const void*                  pNext;
+		0,						// VkShaderModuleCreateFlags    flags;
+		build_mesh_frag_spv_len,			// size_t                       codeSize;
+		(const uint32_t*)build_mesh_frag_spv		// const uint32_t*              pCode;
+	};
+
+	vkCreateShaderModule(vk.device, &shader_vert_crinf, NULL, &vk.mesh_shader_vert);
+	if( result != VK_SUCCESS )
+	{
+		log_fatal("vkCreateShaderModule(vertex) = %s", vulkan_result(result));
+//		goto VK_INIT_CREATE_SHADER_VERT;
+	}
+	vkCreateShaderModule(vk.device, &shader_frag_crinf, NULL, &vk.mesh_shader_frag);
+	if( result != VK_SUCCESS )
+	{
+		log_fatal("vkCreateShaderModule(fragment) = %s", vulkan_result(result));
+//		goto VK_INIT_CREATE_SHADER_FRAG;
+	}
+
+	int ubo_buffer_size = sizeof(struct MESH_UNIFORM_BUFFER);
+
+	vk_buffer( VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+		VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		&vk.mesh_ubo_host, ubo_buffer_size, NULL );
+
+	vk_buffer( VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		&vk.mesh_ubo_device, vk.mesh_ubo_host.size, NULL );
+
+	VkDescriptorSetLayoutBinding descriptor_layout_binding = {
+		0,					// uint32_t              binding;
+		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,	// VkDescriptorType      descriptorType;
+		1,					// uint32_t              descriptorCount;
+		VK_SHADER_STAGE_VERTEX_BIT,		// VkShaderStageFlags    stageFlags;
+		NULL					// const VkSampler*      pImmutableSamplers;
+	};
+
+	VkDescriptorSetLayoutCreateInfo descriptor_layout_crinf = {
+		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType                        sType;
+		NULL,							// const void*                            pNext;
+		0,							// VkDescriptorSetLayoutCreateFlags       flags;
+		1,							// uint32_t                               bindingCount;
+		&descriptor_layout_binding				// const VkDescriptorSetLayoutBinding*    pBindings;
+	};
+
+	result = vkCreateDescriptorSetLayout(vk.device, &descriptor_layout_crinf, NULL, &vk.mesh_ubo_layout);
+	if( result != VK_SUCCESS )
+	{
+		log_fatal("vkCreateDescriptorSetLayout = %s", vulkan_result(result));
+//		goto VK_INIT_DESCRIPTOR_SET_LAYOUT;
+	}
+
+	VkDescriptorSetAllocateInfo desc_set_alloc_info = {
+		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,	// VkStructureType                 sType;
+		NULL,						// const void*                     pNext;
+		vk.descriptor_pool,				// VkDescriptorPool                descriptorPool;
+		1,						// uint32_t                        descriptorSetCount;
+		&vk.mesh_ubo_layout				// const VkDescriptorSetLayout*    pSetLayouts;
+	};
+
+	VkDescriptorSet desc_set;
+	result = vkAllocateDescriptorSets(vk.device, &desc_set_alloc_info, &desc_set);
+	if( result != VK_SUCCESS )
+	{
+		log_warning("vkAllocateDescriptorSets = %s", vulkan_result(result));
+	}
+
+	VkDescriptorBufferInfo desc_buf_info = {
+		vk.ubo_host.buffer,	// VkBuffer        buffer;
+		0,			// VkDeviceSize    offset;
+		sizeof(float)		// VkDeviceSize    range;
+	};
+	VkWriteDescriptorSet desc_write_set = {
+		VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,	// VkStructureType                  sType;
+		NULL,					// const void*                      pNext;
+		desc_set,				// VkDescriptorSet                  dstSet;
+		0,					// uint32_t                         dstBinding;
+		0,					// uint32_t                         dstArrayElement;
+		1,					// uint32_t                         descriptorCount;
+		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,	// VkDescriptorType                 descriptorType;
+		NULL,					// const VkDescriptorImageInfo*     pImageInfo;
+		&desc_buf_info,				// const VkDescriptorBufferInfo*    pBufferInfo;
+		NULL					// const VkBufferView*              pTexelBufferView;
+	};
+	vkUpdateDescriptorSets(vk.device, 1, &desc_write_set, 0, NULL);
+//	log_debug("vkUpdateDescriptorSets");
+
+// create the pipeline
+	// shader and vertex input
+	VkPipelineShaderStageCreateInfo shader_stage_crinf[2] = {
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType                     sType;
+			NULL,							// const void*                         pNext;
+			0,							// VkPipelineShaderStageCreateFlags    flags;
+			VK_SHADER_STAGE_VERTEX_BIT,				// VkShaderStageFlagBits               stage;
+			vk.mesh_shader_vert,					// VkShaderModule                      module;
+			"main",							// const char*                         pName;
+			NULL							// const VkSpecializationInfo*         pSpecializationInfo;
+		},
+		{
+			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType                     sType;
+			NULL,							// const void*                         pNext;
+			0,							// VkPipelineShaderStageCreateFlags    flags;
+			VK_SHADER_STAGE_FRAGMENT_BIT,				// VkShaderStageFlagBits               stage;
+			vk.mesh_shader_frag,					// VkShaderModule                      module;
+			"main",							// const char*                         pName;
+			NULL							// const VkSpecializationInfo*         pSpecializationInfo;
+		}
+	};
+
+	VkPipelineVertexInputStateCreateInfo vertex_input_state_crinf = {
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType                             sType;
+		NULL,								// const void*                                 pNext;
+		0,								// VkPipelineVertexInputStateCreateFlags       flags;
+		0,								// uint32_t                                    vertexBindingDescriptionCount;
+		NULL,								// const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
+		0,								// uint32_t                                    vertexAttributeDescriptionCount;
+		NULL								// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
+	};
+
+	// input assembly, viewport
+	VkPipelineInputAssemblyStateCreateInfo input_assembly_state_crinf = {
+		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType                            sType;
+		NULL,								// const void*                                pNext;
+		0,								// VkPipelineInputAssemblyStateCreateFlags    flags;
+		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,				// VkPrimitiveTopology                        topology;
+		VK_FALSE							// VkBool32                                   primitiveRestartEnable;		
+	};
+
+	VkViewport viewport = {0.0f,0.0f,(float)vid_width,(float)vid_height,0.0f,1.0f};
+	VkRect2D scissor = {{0,0},{vid_width,vid_height}};
+	VkPipelineViewportStateCreateInfo viewport_state_crinf = {
+		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,	// VkStructureType                       sType;
+		NULL,							// const void*                           pNext;
+		0,							// VkPipelineViewportStateCreateFlags    flags;
+		1,							// uint32_t                              viewportCount;
+		&viewport,						// const VkViewport*                     pViewports;
+		1,							// uint32_t                              scissorCount;
+		&scissor						// const VkRect2D*                       pScissors;
+	};
+
+	// Rasterisation, multisampling
+	VkPipelineRasterizationStateCreateInfo rasterization_state_crinf = {
+		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	// VkStructureType                            sType;
+		NULL,								// const void*                                pNext;
+		0,								// VkPipelineRasterizationStateCreateFlags    flags;
+		VK_FALSE,							// VkBool32                                   depthClampEnable;
+		VK_FALSE,							// VkBool32                                   rasterizerDiscardEnable;
+		VK_POLYGON_MODE_FILL,						// VkPolygonMode                              polygonMode;
+		VK_CULL_MODE_BACK_BIT,						// VkCullModeFlags                            cullMode;
+		VK_FRONT_FACE_COUNTER_CLOCKWISE,				// VkFrontFace                                frontFace;
+		VK_FALSE,							// VkBool32                                   depthBiasEnable;
+		0.0f,								// float                                      depthBiasConstantFactor;
+		0.0f,								// float                                      depthBiasClamp;
+		0.0f,								// float                                      depthBiasSlopeFactor;
+		1.0f								// float                                      lineWidth;		
+	};
+
+	VkPipelineMultisampleStateCreateInfo multisample_state_crinf = {
+		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType                          sType;
+		NULL,								// const void*                              pNext;
+		0,								// VkPipelineMultisampleStateCreateFlags    flags;
+		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits                    rasterizationSamples;
+		VK_FALSE,							// VkBool32                                 sampleShadingEnable;
+		1.0f,								// float                                    minSampleShading;
+		NULL,								// const VkSampleMask*                      pSampleMask;
+		VK_FALSE,							// VkBool32                                 alphaToCoverageEnable;
+		VK_FALSE							// VkBool32                                 alphaToOneEnable;
+	};
+
+
+	VkPipelineDepthStencilStateCreateInfo depth_stencil_state_crinf = {
+		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType                           sType;
+		NULL,								// const void*                               pNext;
+		0,								// VkPipelineDepthStencilStateCreateFlags    flags;
+		VK_TRUE,							// VkBool32                                  depthTestEnable;
+		VK_TRUE,							// VkBool32                                  depthWriteEnable;
+		VK_COMPARE_OP_LESS_OR_EQUAL,					// VkCompareOp                               depthCompareOp;
+		VK_FALSE,							// VkBool32                                  depthBoundsTestEnable;
+		VK_FALSE,							// VkBool32                                  stencilTestEnable;
+		{0,0,0,VK_COMPARE_OP_ALWAYS,0,0,0				// VkStencilOpState                          front;
+							// VkStencilOp    failOp;
+							// VkStencilOp    passOp;
+							// VkStencilOp    depthFailOp;
+							// VkCompareOp    compareOp;
+							// uint32_t       compareMask;
+							// uint32_t       writeMask;
+							// uint32_t       reference;
+		}, {0,0,0,VK_COMPARE_OP_ALWAYS,0,0,0				// VkStencilOpState                          back;
+		},
+		0.0f,								// float                                     minDepthBounds;
+		0.0f								// float                                     maxDepthBounds;
+	};
+
+	// colour blending
+	VkPipelineColorBlendAttachmentState color_blend_attachment_state = {
+		VK_FALSE,			// VkBool32                 blendEnable;
+		VK_BLEND_FACTOR_ONE,		// VkBlendFactor            srcColorBlendFactor;
+		VK_BLEND_FACTOR_ZERO,		// VkBlendFactor            dstColorBlendFactor;
+		VK_BLEND_OP_ADD,		// VkBlendOp                colorBlendOp;
+		VK_BLEND_FACTOR_ONE,		// VkBlendFactor            srcAlphaBlendFactor;
+		VK_BLEND_FACTOR_ZERO,		// VkBlendFactor            dstAlphaBlendFactor;
+		VK_BLEND_OP_ADD,		// VkBlendOp                alphaBlendOp;
+		VK_COLOR_COMPONENT_R_BIT |	// VkColorComponentFlags    colorWriteMask;
+		VK_COLOR_COMPONENT_G_BIT |
+		VK_COLOR_COMPONENT_B_BIT |
+		VK_COLOR_COMPONENT_A_BIT
+	};
+
+	VkPipelineColorBlendStateCreateInfo color_blend_state_crinf = {
+		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType                               sType;
+		NULL,								// const void*                                   pNext;
+		0,								// VkPipelineColorBlendStateCreateFlags          flags;
+		VK_FALSE,							// VkBool32                                      logicOpEnable;
+		VK_LOGIC_OP_COPY,						// VkLogicOp                                     logicOp;
+		1,								// uint32_t                                      attachmentCount;
+		&color_blend_attachment_state,					// const VkPipelineColorBlendAttachmentState*    pAttachments;
+		{0.0f,0.0f,0.0f,0.0f}						// float                                         blendConstants[4];
+	};
+
+	// Pipeline creation
+	VkPipelineLayoutCreateInfo layout_crinf = {
+		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType                 sType;
+		NULL,						// const void*                     pNext;
+		0,						// VkPipelineLayoutCreateFlags     flags;
+		1,						// uint32_t                        setLayoutCount;
+		&vk.mesh_ubo_layout,				// const VkDescriptorSetLayout*    pSetLayouts;
+		0,						// uint32_t                        pushConstantRangeCount;
+		NULL						// const VkPushConstantRange*      pPushConstantRanges;
+	};
+	result = vkCreatePipelineLayout(vk.device, &layout_crinf, NULL, &vk.mesh_pipeline_layout);
+	if( result != VK_SUCCESS )
+	{
+		log_fatal("vkCreatePipelineLayout = %s", vulkan_result(result));
+//		goto VK_INIT_PIPELINE_LAYOUT;
+	}
+
+	VkGraphicsPipelineCreateInfo pipeline_crinf = {
+		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType                                  sType;
+		NULL,							// const void*                                      pNext;
+		0,							// VkPipelineCreateFlags                            flags;
+		2,							// uint32_t                                         stageCount;
+		&shader_stage_crinf[0],					// const VkPipelineShaderStageCreateInfo*           pStages;
+		&vertex_input_state_crinf,				// const VkPipelineVertexInputStateCreateInfo*      pVertexInputState;
+		&input_assembly_state_crinf,				// const VkPipelineInputAssemblyStateCreateInfo*    pInputAssemblyState;
+		NULL,							// const VkPipelineTessellationStateCreateInfo*     pTessellationState;
+		&viewport_state_crinf,					// const VkPipelineViewportStateCreateInfo*         pViewportState;
+		&rasterization_state_crinf,				// const VkPipelineRasterizationStateCreateInfo*    pRasterizationState;
+		&multisample_state_crinf,				// const VkPipelineMultisampleStateCreateInfo*      pMultisampleState;
+		&depth_stencil_state_crinf,				// const VkPipelineDepthStencilStateCreateInfo*     pDepthStencilState;
+		&color_blend_state_crinf,				// const VkPipelineColorBlendStateCreateInfo*       pColorBlendState;
+		NULL,							// const VkPipelineDynamicStateCreateInfo*          pDynamicState;
+		vk.mesh_pipeline_layout,				// VkPipelineLayout                                 layout;
+		vk.renderpass,					// VkRenderPass                                     renderPass;
+		0,							// uint32_t                                         subpass;
+		VK_NULL_HANDLE,						// VkPipeline                                       basePipelineHandle;
+		-1							// int32_t                                          basePipelineIndex;
+	};
+
+	result = vkCreateGraphicsPipelines(vk.device, VK_NULL_HANDLE, 1, &pipeline_crinf, NULL, &vk.mesh_pipeline);
+	if( result != VK_SUCCESS )
+	{
+		log_fatal("vkCreateGraphicsPipelines = %s", vulkan_result(result));
+//		goto VK_INIT_PIPELINE;
+	}
+
+}
+
+
+void vk_mesh_pipeline_end(void)
+{
+	vkDestroyPipeline(vk.device, vk.mesh_pipeline, NULL);
+	vkDestroyPipelineLayout(vk.device, vk.mesh_pipeline_layout, NULL);
+	vkDestroyDescriptorSetLayout(vk.device, vk.mesh_ubo_layout, NULL);
+	vkFreeMemory(vk.device, vk.mesh_ubo_device.memory, NULL);
+	vkDestroyBuffer(vk.device, vk.mesh_ubo_device.buffer, NULL);
+	vkFreeMemory(vk.device, vk.mesh_ubo_host.memory, NULL);
+	vkDestroyBuffer(vk.device, vk.mesh_ubo_host.buffer, NULL);
+	vkDestroyShaderModule(vk.device, vk.mesh_shader_vert, NULL);
+	vkDestroyShaderModule(vk.device, vk.mesh_shader_frag, NULL);
 }
 
 
@@ -813,21 +1121,36 @@ int vulkan_init(void)
 
 	// create renderpass
 	VkAttachmentDescription attach_desc[] = {{
-		0,					// VkAttachmentDescriptionFlags    flags;
-		pixel_format,				// VkFormat                        format;
-		VK_SAMPLE_COUNT_1_BIT,			// VkSampleCountFlagBits           samples;
-		VK_ATTACHMENT_LOAD_OP_CLEAR,		// VkAttachmentLoadOp              loadOp;
-		VK_ATTACHMENT_STORE_OP_STORE,		// VkAttachmentStoreOp             storeOp;
-		VK_ATTACHMENT_LOAD_OP_DONT_CARE,	// VkAttachmentLoadOp              stencilLoadOp;
-		VK_ATTACHMENT_STORE_OP_DONT_CARE,	// VkAttachmentStoreOp             stencilStoreOp;
-		VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,	// VkImageLayout                   initialLayout;
-		VK_IMAGE_LAYOUT_PRESENT_SRC_KHR		// VkImageLayout                   finalLayout;
-	}};
+			0,						// VkAttachmentDescriptionFlags    flags;
+			pixel_format,					// VkFormat                        format;
+			VK_SAMPLE_COUNT_1_BIT,				// VkSampleCountFlagBits           samples;
+			VK_ATTACHMENT_LOAD_OP_CLEAR,			// VkAttachmentLoadOp              loadOp;
+			VK_ATTACHMENT_STORE_OP_STORE,			// VkAttachmentStoreOp             storeOp;
+			VK_ATTACHMENT_LOAD_OP_DONT_CARE,		// VkAttachmentLoadOp              stencilLoadOp;
+			VK_ATTACHMENT_STORE_OP_DONT_CARE,		// VkAttachmentStoreOp             stencilStoreOp;
+			VK_IMAGE_LAYOUT_UNDEFINED,			// VkImageLayout                   initialLayout;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout                   finalLayout;
+		},{
+		0,								// VkAttachmentDescriptionFlags    flags;
+			VK_FORMAT_D32_SFLOAT,					// VkFormat                        format;
+			VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits           samples;
+			VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp              loadOp;
+			VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp             storeOp;
+			VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp              stencilLoadOp;
+			VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp             stencilStoreOp;
+			VK_IMAGE_LAYOUT_UNDEFINED,				// VkImageLayout                   initialLayout;
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL	// VkImageLayout                   finalLayout;
+		}
+	};
 
-	VkAttachmentReference color_attach_refs[] = {{
-		0,						// uint32_t         attachment;
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,	// VkImageLayout    layout;
-	}};
+	VkAttachmentReference attach_refs[] = {{
+			0,						// uint32_t         attachment;
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout    layout;
+		}, {
+			1,						// uint32_t         attachment;
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL// VkImageLayout    layout;
+		}
+	};
 
 	VkSubpassDescription subpass_desc[] = {{
 		0,					// VkSubpassDescriptionFlags       flags;
@@ -835,9 +1158,9 @@ int vulkan_init(void)
 		0,					// uint32_t                        inputAttachmentCount;
 		NULL,					// const VkAttachmentReference*    pInputAttachments;
 		1,					// uint32_t                        colorAttachmentCount;
-		color_attach_refs,			// const VkAttachmentReference*    pColorAttachments;
+		&attach_refs[0],			// const VkAttachmentReference*    pColorAttachments;
 		NULL,					// const VkAttachmentReference*    pResolveAttachments;
-		NULL,					// const VkAttachmentReference*    pDepthStencilAttachment;
+		&attach_refs[1],			// const VkAttachmentReference*    pDepthStencilAttachment;
 		0,					// uint32_t                        preserveAttachmentCount;
 		NULL					// const uint32_t*                 pPreserveAttachments;
 	}};
@@ -846,7 +1169,7 @@ int vulkan_init(void)
 		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureType                   sType;
 		NULL,						// const void*                       pNext;
 		0,						// VkRenderPassCreateFlags           flags;
-		1,						// uint32_t                          attachmentCount;
+		2,						// uint32_t                          attachmentCount;
 		attach_desc,					// const VkAttachmentDescription*    pAttachments;
 		1,						// uint32_t                          subpassCount;
 		subpass_desc,					// const VkSubpassDescription*       pSubpasses;
@@ -868,7 +1191,7 @@ int vulkan_init(void)
 		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,	// VkStructureType              sType;
 		NULL,						// const void*                  pNext;
 		0,						// VkShaderModuleCreateFlags    flags;
-		build_vert_spv_len,					// size_t                       codeSize;
+		build_vert_spv_len,				// size_t                       codeSize;
 		(const uint32_t*)build_vert_spv			// const uint32_t*              pCode;
 	};
 
@@ -876,17 +1199,17 @@ int vulkan_init(void)
 		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,	// VkStructureType              sType;
 		NULL,						// const void*                  pNext;
 		0,						// VkShaderModuleCreateFlags    flags;
-		build_frag_spv_len,					// size_t                       codeSize;
+		build_frag_spv_len,				// size_t                       codeSize;
 		(const uint32_t*)build_frag_spv			// const uint32_t*              pCode;
 	};
 
-	vkCreateShaderModule(vk.device, &shader_vert_crinf, NULL, &vk.shader_module_vert);
+	vkCreateShaderModule(vk.device, &shader_vert_crinf, NULL, &vk.shader_vert);
 	if( result != VK_SUCCESS )
 	{
 		log_fatal("vkCreateShaderModule(vertex) = %s", vulkan_result(result));
 		goto VK_INIT_CREATE_SHADER_VERT;
 	}
-	vkCreateShaderModule(vk.device, &shader_frag_crinf, NULL, &vk.shader_module_frag);
+	vkCreateShaderModule(vk.device, &shader_frag_crinf, NULL, &vk.shader_frag);
 	if( result != VK_SUCCESS )
 	{
 		log_fatal("vkCreateShaderModule(fragment) = %s", vulkan_result(result));
@@ -894,109 +1217,39 @@ int vulkan_init(void)
 	}
 
 	// TODO: fancier shader
-	int ubo_buffer_size = 4; //sizeof(UNIFORM_BUFFER);
+	int ubo_buffer_size = sizeof(float);
 
-	VkBufferCreateInfo ubo_buffer_client_crinf = {
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType        sType;
-		NULL,					// const void*            pNext;
-		0,					// VkBufferCreateFlags    flags;
-		ubo_buffer_size,			// VkDeviceSize           size;
-		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |	// VkBufferUsageFlags     usage;
+	result = vk_buffer( VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_SHARING_MODE_EXCLUSIVE,		// VkSharingMode          sharingMode;
-		0,					// uint32_t               queueFamilyIndexCount;
-		NULL					// const uint32_t*        pQueueFamilyIndices;
-	};
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+		VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		&vk.ubo_host, ubo_buffer_size, NULL );
+	if(result != VK_SUCCESS)
+	{
+		log_fatal("vk_buffer = %s", vulkan_result(result));
+		goto VK_INIT_UBO_HOST;
+	}
 
-	VkBufferCreateInfo ubo_buffer_host_crinf = {
-		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType        sType;
-		NULL,					// const void*            pNext;
-		0,					// VkBufferCreateFlags    flags;
-		ubo_buffer_size,			// VkDeviceSize           size;
-		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |	// VkBufferUsageFlags     usage;
+	result = vk_buffer( VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-		VK_SHARING_MODE_EXCLUSIVE,		// VkSharingMode          sharingMode;
-		0,					// uint32_t               queueFamilyIndexCount;
-		NULL					// const uint32_t*        pQueueFamilyIndices;
-	};
-
-	// create the uniform buffer, first the client side
-	result = vkCreateBuffer(vk.device, &ubo_buffer_client_crinf, NULL, &vk.ubo_client_buffer);
-	if( result != VK_SUCCESS )
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		&vk.ubo_device, vk.ubo_host.size, NULL );
+	if(result != VK_SUCCESS)
 	{
-		log_fatal("vkCreateBuffer = %s", vulkan_result(result));
-		goto VK_INIT_UBO_CLIENT_BUFFER;
+		log_fatal("vk_buffer = %s", vulkan_result(result));
+		goto VK_INIT_UBO_DEVICE;
 	}
-	int wanted = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-	VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-	VkMemoryRequirements vk_memreq;
-	vkGetBufferMemoryRequirements(vk.device, vk.ubo_client_buffer, &vk_memreq);
-	int client_memory_type = find_memory_type(vk_memreq, wanted);
-
-	if( ubo_buffer_size < vk_memreq.size )
-	{
-		ubo_buffer_size = vk_memreq.size;
-	}
-
-	VkMemoryAllocateInfo ubo_buffer_client_alloc_info = {
-		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// VkStructureType    sType;
-		NULL,					// const void*        pNext;
-		ubo_buffer_size,			// VkDeviceSize       allocationSize;
-		client_memory_type			// uint32_t           memoryTypeIndex;
-	};
-	result = vkAllocateMemory(vk.device, &ubo_buffer_client_alloc_info, NULL, &vk.ubo_client_mem);
-	if( result != VK_SUCCESS )
-	{
-		log_fatal("vkAllocateMemory = %s", vulkan_result(result));
-		goto VK_INIT_UBO_CLIENT_MEM;
-	}
-	result = vkBindBufferMemory(vk.device, vk.ubo_client_buffer, vk.ubo_client_mem, 0);
-	if( result != VK_SUCCESS )
-	{
-		log_warning("vkBindBufferMemory = %s", vulkan_result(result));
-	}
-
-	// for the host buffer
-	result = vkCreateBuffer(vk.device, &ubo_buffer_host_crinf, NULL, &vk.ubo_host_buffer);
-	if( result != VK_SUCCESS )
-	{
-		log_fatal("vkCreateBuffer = %s", vulkan_result(result));
-		goto VK_INIT_UBO_HOST_BUFFER;
-	}
-
-	wanted = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-	vkGetBufferMemoryRequirements(vk.device, vk.ubo_host_buffer, &vk_memreq);
-	int host_memory_type = find_memory_type(vk_memreq, wanted);
-
-	VkMemoryAllocateInfo ubo_buffer_host_alloc_info = {
-		VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,	// VkStructureType    sType;
-		NULL,					// const void*        pNext;
-		ubo_buffer_size,			// VkDeviceSize       allocationSize;
-		host_memory_type			// uint32_t           memoryTypeIndex;
-	};
-	result = vkAllocateMemory(vk.device, &ubo_buffer_host_alloc_info, NULL, &vk.ubo_host_mem);
-	if( result != VK_SUCCESS )
-	{
-		log_fatal("vkAllocateMemory = %s", vulkan_result(result));
-		goto VK_INIT_UBO_HOST_MEM;
-	}
-	result = vkBindBufferMemory(vk.device, vk.ubo_host_buffer, vk.ubo_host_mem, 0);
-	if( result != VK_SUCCESS )
-	{
-		log_warning("vkBindBufferMemory = %s", vulkan_result(result));
-	}
-
 
 	VkDescriptorPoolSize desc_pool_size = {
 		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,	// VkDescriptorType    type;
-		1					// uint32_t            descriptorCount;
+		2					// uint32_t            descriptorCount;
 	};
 
 	VkDescriptorPoolCreateInfo desc_pool_crinf = {
 		VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,	// VkStructureType                sType;
 		NULL,						// const void*                    pNext;
 		0,						// VkDescriptorPoolCreateFlags    flags;
-		1,						// uint32_t                       maxSets;
+		2,						// uint32_t                       maxSets;
 		1,						// uint32_t                       poolSizeCount;
 		&desc_pool_size					// const VkDescriptorPoolSize*    pPoolSizes;
 	};
@@ -1047,7 +1300,11 @@ int vulkan_init(void)
 		log_warning("vkAllocateDescriptorSets = %s", vulkan_result(result));
 	}
 
-	VkDescriptorBufferInfo desc_buf_info = {vk.ubo_host_buffer,0,sizeof(float)};
+	VkDescriptorBufferInfo desc_buf_info = {
+		vk.ubo_host.buffer,	// VkBuffer        buffer;
+		0,			// VkDeviceSize    offset;
+		sizeof(float)		// VkDeviceSize    range;
+	};
 	VkWriteDescriptorSet desc_write_set = {
 		VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,	// VkStructureType                  sType;
 		NULL,					// const void*                      pNext;
@@ -1071,7 +1328,7 @@ int vulkan_init(void)
 			NULL,							// const void*                         pNext;
 			0,							// VkPipelineShaderStageCreateFlags    flags;
 			VK_SHADER_STAGE_VERTEX_BIT,				// VkShaderStageFlagBits               stage;
-			vk.shader_module_vert,					// VkShaderModule                      module;
+			vk.shader_vert,						// VkShaderModule                      module;
 			"main",							// const char*                         pName;
 			NULL							// const VkSpecializationInfo*         pSpecializationInfo;
 		},
@@ -1080,7 +1337,7 @@ int vulkan_init(void)
 			NULL,							// const void*                         pNext;
 			0,							// VkPipelineShaderStageCreateFlags    flags;
 			VK_SHADER_STAGE_FRAGMENT_BIT,				// VkShaderStageFlagBits               stage;
-			vk.shader_module_frag,					// VkShaderModule                      module;
+			vk.shader_frag,						// VkShaderModule                      module;
 			"main",							// const char*                         pName;
 			NULL							// const VkSpecializationInfo*         pSpecializationInfo;
 		}
@@ -1146,6 +1403,29 @@ int vulkan_init(void)
 		VK_FALSE							// VkBool32                                 alphaToOneEnable;
 	};
 
+	VkPipelineDepthStencilStateCreateInfo depth_stencil_state_crinf = {
+		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType                           sType;
+		NULL,								// const void*                               pNext;
+		0,								// VkPipelineDepthStencilStateCreateFlags    flags;
+		VK_TRUE,							// VkBool32                                  depthTestEnable;
+		VK_TRUE,							// VkBool32                                  depthWriteEnable;
+		VK_COMPARE_OP_LESS_OR_EQUAL,					// VkCompareOp                               depthCompareOp;
+		VK_FALSE,							// VkBool32                                  depthBoundsTestEnable;
+		VK_FALSE,							// VkBool32                                  stencilTestEnable;
+		{0,0,0,VK_COMPARE_OP_ALWAYS,0,0,0				// VkStencilOpState                          front;
+							// VkStencilOp    failOp;
+							// VkStencilOp    passOp;
+							// VkStencilOp    depthFailOp;
+							// VkCompareOp    compareOp;
+							// uint32_t       compareMask;
+							// uint32_t       writeMask;
+							// uint32_t       reference;
+		}, {0,0,0,VK_COMPARE_OP_ALWAYS,0,0,0				// VkStencilOpState                          back;
+		},
+		0.0f,								// float                                     minDepthBounds;
+		0.0f								// float                                     maxDepthBounds;
+	};
+
 	// colour blending
 	VkPipelineColorBlendAttachmentState color_blend_attachment_state = {
 		VK_FALSE,			// VkBool32                 blendEnable;
@@ -1201,7 +1481,7 @@ int vulkan_init(void)
 		&viewport_state_crinf,					// const VkPipelineViewportStateCreateInfo*         pViewportState;
 		&rasterization_state_crinf,				// const VkPipelineRasterizationStateCreateInfo*    pRasterizationState;
 		&multisample_state_crinf,				// const VkPipelineMultisampleStateCreateInfo*      pMultisampleState;
-		NULL,							// const VkPipelineDepthStencilStateCreateInfo*     pDepthStencilState;
+		&depth_stencil_state_crinf,				// const VkPipelineDepthStencilStateCreateInfo*     pDepthStencilState;
 		&color_blend_state_crinf,				// const VkPipelineColorBlendStateCreateInfo*       pColorBlendState;
 		NULL,							// const VkPipelineDynamicStateCreateInfo*          pDynamicState;
 		vk.pipeline_layout,					// VkPipelineLayout                                 layout;
@@ -1226,7 +1506,7 @@ int vulkan_init(void)
 		NULL						// const VkCommandBufferInheritanceInfo*    pInheritanceInfo;
 	};
 
-	VkClearValue clear_color = { { 0.0f, 0.0f, 0.0f, 0.0f } };
+	VkClearValue clear_color[] = { { 0.0f, 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 0.0f, 0.0f } };
 	VkImageSubresourceRange image_subresource_range = {
 		VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags    aspectMask;
 		0,				// uint32_t              baseMipLevel;
@@ -1283,6 +1563,7 @@ int vulkan_init(void)
 	int allocated_imageviews = 0;
 	int allocated_framebuffers = 0;
 	int allocated_semaphores = 0;
+	int allocated_depthbuffer = 0;
 
 	for( int i=0; i<vk.display_buffer_count; i++)
 	{
@@ -1308,13 +1589,23 @@ int vulkan_init(void)
 		}
 		allocated_imageviews++;
 
+		result = vk_imagebuffer( vid_width, vid_height,
+			VK_FORMAT_D32_SFLOAT,
+			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_ASPECT_DEPTH_BIT,
+			&vk.sc_depth[i]);
+		allocated_depthbuffer++;
+
+		VkImageView attachements[] = { vk.sc_imageview[i], vk.sc_depth[i].imageview };
+
 		VkFramebufferCreateInfo fb_crinf = {
 			VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,	// VkStructureType             sType;
 			NULL,						// const void*                 pNext;
 			0,						// VkFramebufferCreateFlags    flags;
 			vk.renderpass,					// VkRenderPass                renderPass;
-			1,						// uint32_t                    attachmentCount;
-			&vk.sc_imageview[i],				// const VkImageView*          pAttachments;
+			2,						// uint32_t                    attachmentCount;
+			attachements,					// const VkImageView*          pAttachments;
 			vid_width,					// uint32_t                    width;
 			vid_height,					// uint32_t                    height;
 			1						// uint32_t                    layers;
@@ -1361,8 +1652,8 @@ int vulkan_init(void)
 			vk.renderpass,					// VkRenderPass           renderPass;
 			vk.sc_framebuffer[i],				// VkFramebuffer          framebuffer;
 			{{0,0},{vid_width,vid_height}},			// VkRect2D               renderArea;
-			1,						// uint32_t               clearValueCount;
-			&clear_color					// const VkClearValue*    pClearValues;
+			2,						// uint32_t               clearValueCount;
+			clear_color					// const VkClearValue*    pClearValues;
 		};
 
 		VkImageMemoryBarrier vkb_draw_to_present = {
@@ -1389,7 +1680,7 @@ int vulkan_init(void)
 		result = vkBeginCommandBuffer(vk.sc_commandbuffer[i], &vk_cmdbegin);
 		if( result != VK_SUCCESS ) { log_warning("vkBeginCommandBuffer = %s", vulkan_result(result)); }
 		
-		vkCmdCopyBuffer( vk.sc_commandbuffer[i], vk.ubo_client_buffer, vk.ubo_host_buffer, 1, &buffer_copy[0]);
+		vkCmdCopyBuffer( vk.sc_commandbuffer[i], vk.ubo_host.buffer, vk.ubo_device.buffer, 1, &buffer_copy[0]);
 
 		vkCmdPipelineBarrier(vk.sc_commandbuffer[i],
 			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -1424,6 +1715,8 @@ VK_INIT_SWAPCHAIN_ITEMS:
 		vkDestroyFramebuffer(vk.device, vk.sc_framebuffer[i], NULL);
 	for(int i=0; i<allocated_imageviews; i++)
 		vkDestroyImageView(vk.device, vk.sc_imageview[i], NULL);
+	for(int i=0; i<allocated_depthbuffer; i++)
+		vk_imagebuffer_end(&vk.sc_depth[i]);
 	free(vk.sc_framebuffer);
 	free(vk.sc_imageview);
 	free(vk.sc_semaphore);
@@ -1443,17 +1736,15 @@ VK_INIT_PIPELINE_LAYOUT:
 VK_INIT_DESCRIPTOR_SET_LAYOUT:
 	vkDestroyDescriptorPool(vk.device, vk.descriptor_pool, NULL);
 VK_INIT_DESCRIPTOR_POOL:
-	vkFreeMemory(vk.device, vk.ubo_host_mem, NULL);
-VK_INIT_UBO_HOST_MEM:
-	vkDestroyBuffer(vk.device, vk.ubo_host_buffer, NULL);
-VK_INIT_UBO_HOST_BUFFER:
-	vkFreeMemory(vk.device, vk.ubo_client_mem, NULL);
-VK_INIT_UBO_CLIENT_MEM:
-	vkDestroyBuffer(vk.device, vk.ubo_client_buffer, NULL);
-VK_INIT_UBO_CLIENT_BUFFER:
-	vkDestroyShaderModule(vk.device, vk.shader_module_frag, NULL);
+	vkFreeMemory(vk.device, vk.ubo_device.memory, NULL);
+	vkDestroyBuffer(vk.device, vk.ubo_device.buffer, NULL);
+VK_INIT_UBO_DEVICE:
+	vkFreeMemory(vk.device, vk.ubo_host.memory, NULL);
+	vkDestroyBuffer(vk.device, vk.ubo_host.buffer, NULL);
+VK_INIT_UBO_HOST:
+	vkDestroyShaderModule(vk.device, vk.shader_frag, NULL);
 VK_INIT_CREATE_SHADER_FRAG:
-	vkDestroyShaderModule(vk.device, vk.shader_module_vert, NULL);
+	vkDestroyShaderModule(vk.device, vk.shader_vert, NULL);
 VK_INIT_CREATE_SHADER_VERT:
 	vkDestroyRenderPass(vk.device, vk.renderpass, NULL);
 VK_INIT_RENDERPASS:
@@ -1487,6 +1778,7 @@ void vulkan_end(void)
 		vkDestroySemaphore(vk.device, vk.sc_semaphore[i], NULL);
 		vkDestroyFramebuffer(vk.device, vk.sc_framebuffer[i], NULL);
 		vkDestroyImageView(vk.device, vk.sc_imageview[i], NULL);
+		vk_imagebuffer_end(&vk.sc_depth[i]);
 	}
 	free(vk.sc_framebuffer);
 	free(vk.sc_imageview);
@@ -1499,12 +1791,12 @@ void vulkan_end(void)
 	vkDestroyPipelineLayout(vk.device, vk.pipeline_layout, NULL);
 	vkDestroyDescriptorSetLayout(vk.device, vk.layout_ubo, NULL);
 	vkDestroyDescriptorPool(vk.device, vk.descriptor_pool, NULL);
-	vkFreeMemory(vk.device, vk.ubo_host_mem, NULL);
-	vkDestroyBuffer(vk.device, vk.ubo_host_buffer, NULL);
-	vkFreeMemory(vk.device, vk.ubo_client_mem, NULL);
-	vkDestroyBuffer(vk.device, vk.ubo_client_buffer, NULL);
-	vkDestroyShaderModule(vk.device, vk.shader_module_vert, NULL);
-	vkDestroyShaderModule(vk.device, vk.shader_module_frag, NULL);
+	vkFreeMemory(vk.device, vk.ubo_device.memory, NULL);
+	vkDestroyBuffer(vk.device, vk.ubo_device.buffer, NULL);
+	vkFreeMemory(vk.device, vk.ubo_host.memory, NULL);
+	vkDestroyBuffer(vk.device, vk.ubo_host.buffer, NULL);
+	vkDestroyShaderModule(vk.device, vk.shader_vert, NULL);
+	vkDestroyShaderModule(vk.device, vk.shader_frag, NULL);
 	vkDestroyRenderPass(vk.device, vk.renderpass, NULL);
 	vkDestroySwapchainKHR(vk.device, vk.swapchain, NULL);
 	vkDestroySurfaceKHR(vk.instance, vk.surface, NULL);
@@ -1532,13 +1824,13 @@ int vulkan_loop(float current_time)
 //	log_debug("current = %d, next = %d", vk.current_image, next_image);
 
 	float * data;
-	result = vkMapMemory(vk.device, vk.ubo_client_mem, 0, sizeof(float), 0, (void**)&data);
+	result = vkMapMemory(vk.device, vk.ubo_host.memory, 0, sizeof(float), 0, (void**)&data);
 	if(result != VK_SUCCESS)
 	{
 		log_warning("vkMapMemory = %s", vulkan_result(result));
 	}
 	data[0] = current_time;
-	vkUnmapMemory(vk.device, vk.ubo_client_mem);
+	vkUnmapMemory(vk.device, vk.ubo_host.memory);
 
 	VkPipelineStageFlags vkflags = VK_PIPELINE_STAGE_TRANSFER_BIT;
 	VkSubmitInfo submit_info = {

@@ -348,8 +348,8 @@ static void wf_face_normals(WF_OBJ *w)
 	// Generate per face normals
 	for(int i=0; i<w->nf; i++)
 	{
-		a = sub( w->v[w->f[i].f.x], w->v[w->f[i].f.y] );
-		b = sub( w->v[w->f[i].f.x], w->v[w->f[i].f.z] );
+		a = sub( w->v[w->f[i].f.y], w->v[w->f[i].f.x] );
+		b = sub( w->v[w->f[i].f.z], w->v[w->f[i].f.x] );
 		t = vect_cross( a, b );
 		w->f[i].normal = vect_norm( t );
 	}

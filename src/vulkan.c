@@ -627,12 +627,12 @@ void vk_mesh_pipeline(void)
 			1,				// uint32_t    location;
 			0,				// uint32_t    binding;
 			VK_FORMAT_R32G32B32_SFLOAT,	// VkFormat    format;
-			16				// uint32_t    offset;
+			sizeof(float)*3			// uint32_t    offset;
 		},{
 			2,				// uint32_t    location;
 			0,				// uint32_t    binding;
 			VK_FORMAT_R32G32_SFLOAT,	// VkFormat    format;
-			24				// uint32_t    offset;
+			sizeof(float)*6			// uint32_t    offset;
 		}
 	};
 
@@ -677,7 +677,7 @@ void vk_mesh_pipeline(void)
 		VK_FALSE,							// VkBool32                                   rasterizerDiscardEnable;
 		VK_POLYGON_MODE_FILL,						// VkPolygonMode                              polygonMode;
 		VK_CULL_MODE_BACK_BIT,						// VkCullModeFlags                            cullMode;
-		VK_FRONT_FACE_CLOCKWISE,				// VkFrontFace                                frontFace;
+		VK_FRONT_FACE_COUNTER_CLOCKWISE,				// VkFrontFace                                frontFace;
 		VK_FALSE,							// VkBool32                                   depthBiasEnable;
 		0.0f,								// float                                      depthBiasConstantFactor;
 		0.0f,								// float                                      depthBiasClamp;
@@ -1959,10 +1959,13 @@ int vulkan_loop(float current_time)
 	proj = mat4x4_perspective(1, 30, 1, (float)vid_height / (float)vid_width);
 //	proj = mat4x4_orthographic(0.1, 30, 1, (float)vid_height / (float)vid_width);
 
-	mat4x4 m = mat4x4_rot_y(current_time);		// rotate the bunny
-	m = mul(m, mat4x4_translate_float(-0.5, 0, -0.5)); // around it's own origin
-	m = mul(mat4x4_translate_float( 0, -0.5, -2), m);	// move it 2 metres infront of the origin
-	m = mul( mat4x4_rot_z(3.141), m);
+	mat4x4 m = mat4x4_identity();
+
+
+	m = mat4x4_rot_y(current_time);		// rotate the bunny
+	m = mul(m, mat4x4_translate_float(-0.5, -0.5, -0.5)); // around it's own origin
+	m = mul(mat4x4_translate_float( 0, 0, -2), m);	// move it 2 metres infront of the origin
+//	m = mul( mat4x4_rot_z(3.141), m);
 
 	struct MESH_UNIFORM_BUFFER *ubo = data;
 

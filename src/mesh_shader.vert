@@ -24,8 +24,7 @@ void main() {
 //	outNormal = inNormal;
 	outUV = inUV;
 //	gl_Position = vec4( inPos.x, inPos.yz, 1.0 );
-	outNormal = inNormal;
 
-	gl_Position = ubo.projection * ubo.modelview * vec4( inPos.xyz, 1.0 );
-//	outNormal = mat3(ubo.modelview) * inNormal;
+	outNormal = mat3(ubo.modelview) * inNormal;
+	gl_Position = ubo.projection * ubo.modelview * vec4( inPos, 1.0 );
 }

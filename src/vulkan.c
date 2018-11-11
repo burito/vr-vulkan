@@ -70,6 +70,7 @@ extern xcb_window_t window;
 #include "log.h"
 
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include "vulkan_helper.h"
 #include "vulkan.h"
@@ -889,6 +890,10 @@ int vulkan_init(void)
 	const char *layer_names[] = {
 		"VK_LAYER_LUNARG_standard_validation",
 	};
+#ifdef __APPLE__
+	layer_count = 0;
+#endif
+
 
 	/* Vulkan Initialisation is here! */
 	VkInstanceCreateInfo vkici = {

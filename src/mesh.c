@@ -469,8 +469,6 @@ void wf_gpu_load(WF_OBJ *w)
 	VkResult result;
 	struct VULKAN_BUFFER vertex_staging;
 	struct VULKAN_BUFFER index_staging;
-	struct VULKAN_BUFFER vertex_buffer;
-	struct VULKAN_BUFFER index_buffer;
 	VkDeviceSize vertex_buffer_size = w->nv * 32;
 	VkDeviceSize index_buffer_size = w->nf*12;
 

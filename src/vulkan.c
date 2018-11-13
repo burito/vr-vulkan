@@ -484,7 +484,23 @@ void vk_framebuffer_end(struct VR_framebuffer *fb)
 }
 
 
-void vk_mesh_pipeline(void)
+
+void vk_pipeline_end(struct VULKAN_PIPELINE *vp)
+{
+	vkDestroyPipeline(vk.device, vp->pipeline, NULL);
+	vkDestroyPipelineLayout(vk.device, vp->pipeline_layout, NULL);
+	vkDestroyDescriptorSetLayout(vk.device, vp->descriptor_set_layout, NULL);
+	vkFreeMemory(vk.device, vp->ubo_device.memory, NULL);
+	vkDestroyBuffer(vk.device, vp->ubo_device.buffer, NULL);
+	vkFreeMemory(vk.device, vp->ubo_host.memory, NULL);
+	vkDestroyBuffer(vk.device, vp->ubo_host.buffer, NULL);
+	vkDestroyShaderModule(vk.device, vp->shader_vertex, NULL);
+	vkDestroyShaderModule(vk.device, vp->shader_fragment, NULL);
+}
+
+
+
+void vk_pipeline(struct VULKAN_PIPELINE *vp)
 {
 	VkResult result;
 	// create the shaders
@@ -493,43 +509,42 @@ void vk_mesh_pipeline(void)
 		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,	// VkStructureType              sType;
 		NULL,						// const void*                  pNext;
 		0,						// VkShaderModuleCreateFlags    flags;
-		build_mesh_vert_spv_len,			// size_t                       codeSize;
-		(const uint32_t*)build_mesh_vert_spv		// const uint32_t*              pCode;
+		vp->shader_vertex_size,				// size_t                       codeSize;
+		vp->shader_vertex_code				// const uint32_t*              pCode;
 	};
 
 	VkShaderModuleCreateInfo shader_frag_crinf = {
 		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,	// VkStructureType              sType;
 		NULL,						// const void*                  pNext;
 		0,						// VkShaderModuleCreateFlags    flags;
-		build_mesh_frag_spv_len,			// size_t                       codeSize;
-		(const uint32_t*)build_mesh_frag_spv		// const uint32_t*              pCode;
+		vp->shader_fragment_size,			// size_t                       codeSize;
+		vp->shader_fragment_code			// const uint32_t*              pCode;
 	};
 
-	result = vkCreateShaderModule(vk.device, &shader_vert_crinf, NULL, &vk.mesh_shader_vert);
+	result = vkCreateShaderModule(vk.device, &shader_vert_crinf, NULL, &vp->shader_vertex);
 	if( result != VK_SUCCESS )
 	{
 		log_fatal("vkCreateShaderModule(vertex) = %s", vulkan_result(result));
 //		goto VK_INIT_CREATE_SHADER_VERT;
 	}
-	result = vkCreateShaderModule(vk.device, &shader_frag_crinf, NULL, &vk.mesh_shader_frag);
+	result = vkCreateShaderModule(vk.device, &shader_frag_crinf, NULL, &vp->shader_fragment);
 	if( result != VK_SUCCESS )
 	{
 		log_fatal("vkCreateShaderModule(fragment) = %s", vulkan_result(result));
 //		goto VK_INIT_CREATE_SHADER_FRAG;
 	}
 
-	int ubo_buffer_size = sizeof(struct MESH_UNIFORM_BUFFER);
 
 	vk_buffer( VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
 		VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		&vk.mesh_ubo_host, ubo_buffer_size, NULL );
+		&vp->ubo_host, vp->ubo_size, NULL );
 
 	vk_buffer( VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		&vk.mesh_ubo_device, vk.mesh_ubo_host.size, NULL );
+		&vp->ubo_device, vp->ubo_host.size, NULL );
 
 	VkDescriptorSetLayoutBinding descriptor_layout_binding = {
 		0,					// uint32_t              binding;
@@ -548,7 +563,7 @@ void vk_mesh_pipeline(void)
 		&descriptor_layout_binding				// const VkDescriptorSetLayoutBinding*    pBindings;
 	};
 
-	result = vkCreateDescriptorSetLayout(vk.device, &descriptor_layout_crinf, NULL, &vk.mesh_ubo_layout);
+	result = vkCreateDescriptorSetLayout(vk.device, &descriptor_layout_crinf, NULL, &vp->descriptor_set_layout);
 	if( result != VK_SUCCESS )
 	{
 		log_fatal("vkCreateDescriptorSetLayout = %s", vulkan_result(result));
@@ -560,24 +575,24 @@ void vk_mesh_pipeline(void)
 		NULL,						// const void*                     pNext;
 		vk.descriptor_pool,				// VkDescriptorPool                descriptorPool;
 		1,						// uint32_t                        descriptorSetCount;
-		&vk.mesh_ubo_layout				// const VkDescriptorSetLayout*    pSetLayouts;
+		&vp->descriptor_set_layout			// const VkDescriptorSetLayout*    pSetLayouts;
 	};
 
-	result = vkAllocateDescriptorSets(vk.device, &desc_set_alloc_info, &vk.mesh_descriptor_set);
+	result = vkAllocateDescriptorSets(vk.device, &desc_set_alloc_info, &vp->descriptor_set);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkAllocateDescriptorSets = %s", vulkan_result(result));
 	}
 
 	VkDescriptorBufferInfo desc_buf_info = {
-		vk.mesh_ubo_host.buffer,// VkBuffer        buffer;
+		vp->ubo_host.buffer,	// VkBuffer        buffer;
 		0,			// VkDeviceSize    offset;
-		sizeof(struct MESH_UNIFORM_BUFFER)	// VkDeviceSize    range;
+		vp->ubo_size		// VkDeviceSize    range;
 	};
 	VkWriteDescriptorSet desc_write_set = {
 		VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,	// VkStructureType                  sType;
 		NULL,					// const void*                      pNext;
-		vk.mesh_descriptor_set,			// VkDescriptorSet                  dstSet;
+		vp->descriptor_set,			// VkDescriptorSet                  dstSet;
 		0,					// uint32_t                         dstBinding;
 		0,					// uint32_t                         dstArrayElement;
 		1,					// uint32_t                         descriptorCount;
@@ -597,7 +612,7 @@ void vk_mesh_pipeline(void)
 			NULL,							// const void*                         pNext;
 			0,							// VkPipelineShaderStageCreateFlags    flags;
 			VK_SHADER_STAGE_VERTEX_BIT,				// VkShaderStageFlagBits               stage;
-			vk.mesh_shader_vert,					// VkShaderModule                      module;
+			vp->shader_vertex,					// VkShaderModule                      module;
 			"main",							// const char*                         pName;
 			NULL							// const VkSpecializationInfo*         pSpecializationInfo;
 		},
@@ -606,47 +621,13 @@ void vk_mesh_pipeline(void)
 			NULL,							// const void*                         pNext;
 			0,							// VkPipelineShaderStageCreateFlags    flags;
 			VK_SHADER_STAGE_FRAGMENT_BIT,				// VkShaderStageFlagBits               stage;
-			vk.mesh_shader_frag,					// VkShaderModule                      module;
+			vp->shader_fragment,					// VkShaderModule                      module;
 			"main",							// const char*                         pName;
 			NULL							// const VkSpecializationInfo*         pSpecializationInfo;
 		}
 	};
 
-	VkVertexInputBindingDescription vertex_binding_description = {
-		0,				// uint32_t             binding;
-		32,				// uint32_t             stride;
-		VK_VERTEX_INPUT_RATE_VERTEX	// VkVertexInputRate    inputRate;
-	};
 
-
-	VkVertexInputAttributeDescription attribute_binding_description[] = {{
-			0,				// uint32_t    location;
-			0,				// uint32_t    binding;
-			VK_FORMAT_R32G32B32_SFLOAT,	// VkFormat    format;
-			0				// uint32_t    offset;
-		},{
-			1,				// uint32_t    location;
-			0,				// uint32_t    binding;
-			VK_FORMAT_R32G32B32_SFLOAT,	// VkFormat    format;
-			sizeof(float)*3			// uint32_t    offset;
-		},{
-			2,				// uint32_t    location;
-			0,				// uint32_t    binding;
-			VK_FORMAT_R32G32_SFLOAT,	// VkFormat    format;
-			sizeof(float)*6			// uint32_t    offset;
-		}
-	};
-
-
-	VkPipelineVertexInputStateCreateInfo vertex_input_state_crinf = {
-		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType                             sType;
-		NULL,								// const void*                                 pNext;
-		0,								// VkPipelineVertexInputStateCreateFlags       flags;
-		1,								// uint32_t                                    vertexBindingDescriptionCount;
-		&vertex_binding_description,					// const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
-		3,								// uint32_t                                    vertexAttributeDescriptionCount;
-		attribute_binding_description					// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
-	};
 
 	// input assembly, viewport
 	VkPipelineInputAssemblyStateCreateInfo input_assembly_state_crinf = {
@@ -698,7 +679,6 @@ void vk_mesh_pipeline(void)
 		VK_FALSE,							// VkBool32                                 alphaToCoverageEnable;
 		VK_FALSE							// VkBool32                                 alphaToOneEnable;
 	};
-
 
 	VkPipelineDepthStencilStateCreateInfo depth_stencil_state_crinf = {
 		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType                           sType;
@@ -755,11 +735,11 @@ void vk_mesh_pipeline(void)
 		NULL,						// const void*                     pNext;
 		0,						// VkPipelineLayoutCreateFlags     flags;
 		1,						// uint32_t                        setLayoutCount;
-		&vk.mesh_ubo_layout,				// const VkDescriptorSetLayout*    pSetLayouts;
+		&vp->descriptor_set_layout,			// const VkDescriptorSetLayout*    pSetLayouts;
 		0,						// uint32_t                        pushConstantRangeCount;
 		NULL						// const VkPushConstantRange*      pPushConstantRanges;
 	};
-	result = vkCreatePipelineLayout(vk.device, &layout_crinf, NULL, &vk.mesh_pipeline_layout);
+	result = vkCreatePipelineLayout(vk.device, &layout_crinf, NULL, &vp->pipeline_layout);
 	if( result != VK_SUCCESS )
 	{
 		log_fatal("vkCreatePipelineLayout = %s", vulkan_result(result));
@@ -772,7 +752,7 @@ void vk_mesh_pipeline(void)
 		0,							// VkPipelineCreateFlags                            flags;
 		2,							// uint32_t                                         stageCount;
 		&shader_stage_crinf[0],					// const VkPipelineShaderStageCreateInfo*           pStages;
-		&vertex_input_state_crinf,				// const VkPipelineVertexInputStateCreateInfo*      pVertexInputState;
+		vp->vertex_input_state_crinf,				// const VkPipelineVertexInputStateCreateInfo*      pVertexInputState;
 		&input_assembly_state_crinf,				// const VkPipelineInputAssemblyStateCreateInfo*    pInputAssemblyState;
 		NULL,							// const VkPipelineTessellationStateCreateInfo*     pTessellationState;
 		&viewport_state_crinf,					// const VkPipelineViewportStateCreateInfo*         pViewportState;
@@ -781,105 +761,69 @@ void vk_mesh_pipeline(void)
 		&depth_stencil_state_crinf,				// const VkPipelineDepthStencilStateCreateInfo*     pDepthStencilState;
 		&color_blend_state_crinf,				// const VkPipelineColorBlendStateCreateInfo*       pColorBlendState;
 		NULL,							// const VkPipelineDynamicStateCreateInfo*          pDynamicState;
-		vk.mesh_pipeline_layout,				// VkPipelineLayout                                 layout;
-		vk.renderpass,					// VkRenderPass                                     renderPass;
+		vp->pipeline_layout,					// VkPipelineLayout                                 layout;
+		vk.renderpass,						// VkRenderPass                                     renderPass;
 		0,							// uint32_t                                         subpass;
 		VK_NULL_HANDLE,						// VkPipeline                                       basePipelineHandle;
 		-1							// int32_t                                          basePipelineIndex;
 	};
 
-	result = vkCreateGraphicsPipelines(vk.device, VK_NULL_HANDLE, 1, &pipeline_crinf, NULL, &vk.mesh_pipeline);
+	result = vkCreateGraphicsPipelines(vk.device, VK_NULL_HANDLE, 1, &pipeline_crinf, NULL, &vp->pipeline);
 	if( result != VK_SUCCESS )
 	{
 		log_fatal("vkCreateGraphicsPipelines = %s", vulkan_result(result));
 //		goto VK_INIT_PIPELINE;
 	}
 
-
-	VkAttachmentReference attachment_reference[] = {
-		{
-			0,						// uint32_t         attachment;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout    layout;
-		}, {
-			1,							// uint32_t         attachment;
-			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL	// VkImageLayout    layout;
-		}
-	};
-
-	VkAttachmentDescription attachment_description[] = {
-		{
-			0,						// VkAttachmentDescriptionFlags    flags;
-			pixel_format,					// VkFormat                        format;
-			VK_SAMPLE_COUNT_1_BIT,				// VkSampleCountFlagBits           samples;
-			VK_ATTACHMENT_LOAD_OP_CLEAR,			// VkAttachmentLoadOp              loadOp;
-			VK_ATTACHMENT_STORE_OP_STORE,			// VkAttachmentStoreOp             storeOp;
-			VK_ATTACHMENT_LOAD_OP_DONT_CARE,		// VkAttachmentLoadOp              stencilLoadOp;
-			VK_ATTACHMENT_STORE_OP_DONT_CARE,		// VkAttachmentStoreOp             stencilStoreOp;
-			VK_IMAGE_LAYOUT_UNDEFINED,	// VkImageLayout                   initialLayout;
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL	// VkImageLayout                   finalLayout;
-		},{
-			0,						// VkAttachmentDescriptionFlags    flags;
-			VK_FORMAT_D32_SFLOAT,					// VkFormat                        format;
-			VK_SAMPLE_COUNT_1_BIT,					// VkSampleCountFlagBits           samples;
-			VK_ATTACHMENT_LOAD_OP_CLEAR,				// VkAttachmentLoadOp              loadOp;
-			VK_ATTACHMENT_STORE_OP_STORE,				// VkAttachmentStoreOp             storeOp;
-			VK_ATTACHMENT_LOAD_OP_DONT_CARE,			// VkAttachmentLoadOp              stencilLoadOp;
-			VK_ATTACHMENT_STORE_OP_DONT_CARE,			// VkAttachmentStoreOp             stencilStoreOp;
-			VK_IMAGE_LAYOUT_UNDEFINED,	// VkImageLayout                   initialLayout;
-			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL	// VkImageLayout                   finalLayout;
-		}
-	};
-
-	VkSubpassDescription subpass_description = {
-		0,					// VkSubpassDescriptionFlags       flags;
-		VK_PIPELINE_BIND_POINT_GRAPHICS,	// VkPipelineBindPoint             pipelineBindPoint;
-		0,					// uint32_t                        inputAttachmentCount;
-		NULL,					// const VkAttachmentReference*    pInputAttachments;
-		1,					// uint32_t                        colorAttachmentCount;
-		&attachment_reference[0],		// const VkAttachmentReference*    pColorAttachments;
-		NULL,					// const VkAttachmentReference*    pResolveAttachments;
-		&attachment_reference[1],		// const VkAttachmentReference*    pDepthStencilAttachment;
-		0,					// uint32_t                        preserveAttachmentCount;
-		NULL					// const uint32_t*                 pPreserveAttachments;
-	};
-
-	VkRenderPassCreateInfo renderpass_crinf = {
-		VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,	// VkStructureType                   sType;
-		NULL,						// const void*                       pNext;
-		0,						// VkRenderPassCreateFlags           flags;
-		2,						// uint32_t                          attachmentCount;
-		attachment_description,				// const VkAttachmentDescription*    pAttachments;
-		1,						// uint32_t                          subpassCount;
-		&subpass_description,				// const VkSubpassDescription*       pSubpasses;
-		0,						// uint32_t                          dependencyCount;
-		NULL						// const VkSubpassDependency*        pDependencies;
-	};
-	// TODO: do we need this?
-	result = vkCreateRenderPass(vk.device, &renderpass_crinf, NULL, &vk.mesh_renderpass);
-	if( result != VK_SUCCESS )
-	{
-		log_fatal("vkCreateRenderPass = %s", vulkan_result(result));
-//		goto VK_INIT_PIPELINE;
-	}
-
-
-
 }
 
 
-void vk_mesh_pipeline_end(void)
+void vk_pipeline_mesh(void)
 {
-	vkDestroyRenderPass(vk.device, vk.mesh_renderpass, NULL);
-	vkDestroyPipeline(vk.device, vk.mesh_pipeline, NULL);
-	vkDestroyPipelineLayout(vk.device, vk.mesh_pipeline_layout, NULL);
-	vkDestroyDescriptorSetLayout(vk.device, vk.mesh_ubo_layout, NULL);
-	vkFreeMemory(vk.device, vk.mesh_ubo_device.memory, NULL);
-	vkDestroyBuffer(vk.device, vk.mesh_ubo_device.buffer, NULL);
-	vkFreeMemory(vk.device, vk.mesh_ubo_host.memory, NULL);
-	vkDestroyBuffer(vk.device, vk.mesh_ubo_host.buffer, NULL);
-	vkDestroyShaderModule(vk.device, vk.mesh_shader_vert, NULL);
-	vkDestroyShaderModule(vk.device, vk.mesh_shader_frag, NULL);
+	VkVertexInputBindingDescription vertex_binding_description = {
+		0,				// uint32_t             binding;
+		32,				// uint32_t             stride;
+		VK_VERTEX_INPUT_RATE_VERTEX	// VkVertexInputRate    inputRate;
+	};
+
+	VkVertexInputAttributeDescription attribute_binding_description[] = {{
+			0,				// uint32_t    location;
+			0,				// uint32_t    binding;
+			VK_FORMAT_R32G32B32_SFLOAT,	// VkFormat    format;
+			0				// uint32_t    offset;
+		},{
+			1,				// uint32_t    location;
+			0,				// uint32_t    binding;
+			VK_FORMAT_R32G32B32_SFLOAT,	// VkFormat    format;
+			sizeof(float)*3			// uint32_t    offset;
+		},{
+			2,				// uint32_t    location;
+			0,				// uint32_t    binding;
+			VK_FORMAT_R32G32_SFLOAT,	// VkFormat    format;
+			sizeof(float)*6			// uint32_t    offset;
+		}
+	};
+
+	VkPipelineVertexInputStateCreateInfo vertex_input_state_crinf = {
+		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType                             sType;
+		NULL,								// const void*                                 pNext;
+		0,								// VkPipelineVertexInputStateCreateFlags       flags;
+		1,								// uint32_t                                    vertexBindingDescriptionCount;
+		&vertex_binding_description,					// const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
+		3,								// uint32_t                                    vertexAttributeDescriptionCount;
+		attribute_binding_description					// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
+	};
+
+	vk.mesh.vertex_input_state_crinf = &vertex_input_state_crinf;
+	vk.mesh.shader_vertex_size = build_mesh_vert_spv_len;
+	vk.mesh.shader_fragment_size = build_mesh_frag_spv_len;
+	vk.mesh.shader_vertex_code = (const uint32_t *)build_mesh_vert_spv;
+	vk.mesh.shader_fragment_code = (const uint32_t *)build_mesh_frag_spv;
+	vk.mesh.ubo_size = sizeof(struct MESH_UNIFORM_BUFFER);
+	vk_pipeline(&vk.mesh);
 }
+
+
 
 
 int vulkan_init(void)
@@ -1291,62 +1235,7 @@ int vulkan_init(void)
 		goto VK_INIT_RENDERPASS;
 	}
 
-
-	// create the shaders
-
-	VkShaderModuleCreateInfo shader_vert_crinf = {
-		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,	// VkStructureType              sType;
-		NULL,						// const void*                  pNext;
-		0,						// VkShaderModuleCreateFlags    flags;
-		build_vert_spv_len,				// size_t                       codeSize;
-		(const uint32_t*)build_vert_spv			// const uint32_t*              pCode;
-	};
-
-	VkShaderModuleCreateInfo shader_frag_crinf = {
-		VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,	// VkStructureType              sType;
-		NULL,						// const void*                  pNext;
-		0,						// VkShaderModuleCreateFlags    flags;
-		build_frag_spv_len,				// size_t                       codeSize;
-		(const uint32_t*)build_frag_spv			// const uint32_t*              pCode;
-	};
-
-	vkCreateShaderModule(vk.device, &shader_vert_crinf, NULL, &vk.shader_vert);
-	if( result != VK_SUCCESS )
-	{
-		log_fatal("vkCreateShaderModule(vertex) = %s", vulkan_result(result));
-		goto VK_INIT_CREATE_SHADER_VERT;
-	}
-	vkCreateShaderModule(vk.device, &shader_frag_crinf, NULL, &vk.shader_frag);
-	if( result != VK_SUCCESS )
-	{
-		log_fatal("vkCreateShaderModule(fragment) = %s", vulkan_result(result));
-		goto VK_INIT_CREATE_SHADER_FRAG;
-	}
-
-	// TODO: fancier shader
-	int ubo_buffer_size = sizeof(float);
-
-	result = vk_buffer( VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-		VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		&vk.ubo_host, ubo_buffer_size, NULL );
-	if(result != VK_SUCCESS)
-	{
-		log_fatal("vk_buffer = %s", vulkan_result(result));
-		goto VK_INIT_UBO_HOST;
-	}
-
-	result = vk_buffer( VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
-		VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		&vk.ubo_device, vk.ubo_host.size, NULL );
-	if(result != VK_SUCCESS)
-	{
-		log_fatal("vk_buffer = %s", vulkan_result(result));
-		goto VK_INIT_UBO_DEVICE;
-	}
-
+	// Create the Descriptor Pool
 	VkDescriptorPoolSize desc_pool_size = {
 		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,	// VkDescriptorType    type;
 		2					// uint32_t            descriptorCount;
@@ -1368,241 +1257,6 @@ int vulkan_init(void)
 		goto VK_INIT_DESCRIPTOR_POOL;
 	}
 
-	VkDescriptorSetLayoutBinding descriptor_layout_binding = {
-		0,					// uint32_t              binding;
-		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,	// VkDescriptorType      descriptorType;
-		1,					// uint32_t              descriptorCount;
-		VK_SHADER_STAGE_FRAGMENT_BIT,		// VkShaderStageFlags    stageFlags;
-		NULL					// const VkSampler*      pImmutableSamplers;
-	};
-
-	VkDescriptorSetLayoutCreateInfo descriptor_layout_crinf = {
-		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType                        sType;
-		NULL,							// const void*                            pNext;
-		0,							// VkDescriptorSetLayoutCreateFlags       flags;
-		1,							// uint32_t                               bindingCount;
-		&descriptor_layout_binding				// const VkDescriptorSetLayoutBinding*    pBindings;
-	};
-
-
-	result = vkCreateDescriptorSetLayout(vk.device, &descriptor_layout_crinf, NULL, &vk.layout_ubo);
-	if( result != VK_SUCCESS )
-	{
-		log_fatal("vkCreateDescriptorSetLayout = %s", vulkan_result(result));
-		goto VK_INIT_DESCRIPTOR_SET_LAYOUT;
-	}
-
-	VkDescriptorSetAllocateInfo desc_set_alloc_info = {
-		VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,	// VkStructureType                 sType;
-		NULL,						// const void*                     pNext;
-		vk.descriptor_pool,				// VkDescriptorPool                descriptorPool;
-		1,						// uint32_t                        descriptorSetCount;
-		&vk.layout_ubo					// const VkDescriptorSetLayout*    pSetLayouts;
-	};
-
-	result = vkAllocateDescriptorSets(vk.device, &desc_set_alloc_info, &vk.descriptor_set);
-	if( result != VK_SUCCESS )
-	{
-		log_warning("vkAllocateDescriptorSets = %s", vulkan_result(result));
-	}
-
-	VkDescriptorBufferInfo desc_buf_info = {
-		vk.ubo_host.buffer,	// VkBuffer        buffer;
-		0,			// VkDeviceSize    offset;
-		sizeof(float)		// VkDeviceSize    range;
-	};
-	VkWriteDescriptorSet desc_write_set = {
-		VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,	// VkStructureType                  sType;
-		NULL,					// const void*                      pNext;
-		vk.descriptor_set,			// VkDescriptorSet                  dstSet;
-		0,					// uint32_t                         dstBinding;
-		0,					// uint32_t                         dstArrayElement;
-		1,					// uint32_t                         descriptorCount;
-		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,	// VkDescriptorType                 descriptorType;
-		NULL,					// const VkDescriptorImageInfo*     pImageInfo;
-		&desc_buf_info,				// const VkDescriptorBufferInfo*    pBufferInfo;
-		NULL					// const VkBufferView*              pTexelBufferView;
-	};
-	vkUpdateDescriptorSets(vk.device, 1, &desc_write_set, 0, NULL);
-	log_debug("vkUpdateDescriptorSets");
-
-// create the pipeline
-	// shader and vertex input
-	VkPipelineShaderStageCreateInfo shader_stage_crinf[2] = {
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType                     sType;
-			NULL,							// const void*                         pNext;
-			0,							// VkPipelineShaderStageCreateFlags    flags;
-			VK_SHADER_STAGE_VERTEX_BIT,				// VkShaderStageFlagBits               stage;
-			vk.shader_vert,						// VkShaderModule                      module;
-			"main",							// const char*                         pName;
-			NULL							// const VkSpecializationInfo*         pSpecializationInfo;
-		},
-		{
-			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,	// VkStructureType                     sType;
-			NULL,							// const void*                         pNext;
-			0,							// VkPipelineShaderStageCreateFlags    flags;
-			VK_SHADER_STAGE_FRAGMENT_BIT,				// VkShaderStageFlagBits               stage;
-			vk.shader_frag,						// VkShaderModule                      module;
-			"main",							// const char*                         pName;
-			NULL							// const VkSpecializationInfo*         pSpecializationInfo;
-		}
-	};
-
-	VkPipelineVertexInputStateCreateInfo vertex_input_state_crinf = {
-		VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,	// VkStructureType                             sType;
-		NULL,								// const void*                                 pNext;
-		0,								// VkPipelineVertexInputStateCreateFlags       flags;
-		0,								// uint32_t                                    vertexBindingDescriptionCount;
-		NULL,								// const VkVertexInputBindingDescription*      pVertexBindingDescriptions;
-		0,								// uint32_t                                    vertexAttributeDescriptionCount;
-		NULL								// const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions;
-	};
-
-	// input assembly, viewport
-	VkPipelineInputAssemblyStateCreateInfo input_assembly_state_crinf = {
-		VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,	// VkStructureType                            sType;
-		NULL,								// const void*                                pNext;
-		0,								// VkPipelineInputAssemblyStateCreateFlags    flags;
-		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,				// VkPrimitiveTopology                        topology;
-		VK_FALSE							// VkBool32                                   primitiveRestartEnable;		
-	};
-
-	VkViewport viewport = {0.0f,0.0f,(float)vid_width,(float)vid_height,0.0f,1.0f};
-	VkRect2D scissor = {{0,0},{vid_width,vid_height}};
-	VkPipelineViewportStateCreateInfo viewport_state_crinf = {
-		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,	// VkStructureType                       sType;
-		NULL,							// const void*                           pNext;
-		0,							// VkPipelineViewportStateCreateFlags    flags;
-		1,							// uint32_t                              viewportCount;
-		&viewport,						// const VkViewport*                     pViewports;
-		1,							// uint32_t                              scissorCount;
-		&scissor						// const VkRect2D*                       pScissors;
-	};
-
-	// Rasterisation, multisampling
-	VkPipelineRasterizationStateCreateInfo rasterization_state_crinf = {
-		VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,	// VkStructureType                            sType;
-		NULL,								// const void*                                pNext;
-		0,								// VkPipelineRasterizationStateCreateFlags    flags;
-		VK_FALSE,							// VkBool32                                   depthClampEnable;
-		VK_FALSE,							// VkBool32                                   rasterizerDiscardEnable;
-		VK_POLYGON_MODE_FILL,						// VkPolygonMode                              polygonMode;
-		VK_CULL_MODE_BACK_BIT,						// VkCullModeFlags                            cullMode;
-		VK_FRONT_FACE_COUNTER_CLOCKWISE,				// VkFrontFace                                frontFace;
-		VK_FALSE,							// VkBool32                                   depthBiasEnable;
-		0.0f,								// float                                      depthBiasConstantFactor;
-		0.0f,								// float                                      depthBiasClamp;
-		0.0f,								// float                                      depthBiasSlopeFactor;
-		1.0f								// float                                      lineWidth;		
-	};
-
-	VkPipelineMultisampleStateCreateInfo multisample_state_crinf = {
-		VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,	// VkStructureType                          sType;
-		NULL,								// const void*                              pNext;
-		0,								// VkPipelineMultisampleStateCreateFlags    flags;
-		VK_SAMPLE_COUNT_1_BIT,						// VkSampleCountFlagBits                    rasterizationSamples;
-		VK_FALSE,							// VkBool32                                 sampleShadingEnable;
-		1.0f,								// float                                    minSampleShading;
-		NULL,								// const VkSampleMask*                      pSampleMask;
-		VK_FALSE,							// VkBool32                                 alphaToCoverageEnable;
-		VK_FALSE							// VkBool32                                 alphaToOneEnable;
-	};
-
-	VkPipelineDepthStencilStateCreateInfo depth_stencil_state_crinf = {
-		VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,	// VkStructureType                           sType;
-		NULL,								// const void*                               pNext;
-		0,								// VkPipelineDepthStencilStateCreateFlags    flags;
-		VK_TRUE,							// VkBool32                                  depthTestEnable;
-		VK_TRUE,							// VkBool32                                  depthWriteEnable;
-		VK_COMPARE_OP_LESS_OR_EQUAL,					// VkCompareOp                               depthCompareOp;
-		VK_FALSE,							// VkBool32                                  depthBoundsTestEnable;
-		VK_FALSE,							// VkBool32                                  stencilTestEnable;
-		{0,0,0,VK_COMPARE_OP_ALWAYS,0,0,0				// VkStencilOpState                          front;
-							// VkStencilOp    failOp;
-							// VkStencilOp    passOp;
-							// VkStencilOp    depthFailOp;
-							// VkCompareOp    compareOp;
-							// uint32_t       compareMask;
-							// uint32_t       writeMask;
-							// uint32_t       reference;
-		}, {0,0,0,VK_COMPARE_OP_ALWAYS,0,0,0				// VkStencilOpState                          back;
-		},
-		0.0f,								// float                                     minDepthBounds;
-		0.0f								// float                                     maxDepthBounds;
-	};
-
-	// colour blending
-	VkPipelineColorBlendAttachmentState color_blend_attachment_state = {
-		VK_FALSE,			// VkBool32                 blendEnable;
-		VK_BLEND_FACTOR_ONE,		// VkBlendFactor            srcColorBlendFactor;
-		VK_BLEND_FACTOR_ZERO,		// VkBlendFactor            dstColorBlendFactor;
-		VK_BLEND_OP_ADD,		// VkBlendOp                colorBlendOp;
-		VK_BLEND_FACTOR_ONE,		// VkBlendFactor            srcAlphaBlendFactor;
-		VK_BLEND_FACTOR_ZERO,		// VkBlendFactor            dstAlphaBlendFactor;
-		VK_BLEND_OP_ADD,		// VkBlendOp                alphaBlendOp;
-		VK_COLOR_COMPONENT_R_BIT |	// VkColorComponentFlags    colorWriteMask;
-		VK_COLOR_COMPONENT_G_BIT |
-		VK_COLOR_COMPONENT_B_BIT |
-		VK_COLOR_COMPONENT_A_BIT
-	};
-
-	VkPipelineColorBlendStateCreateInfo color_blend_state_crinf = {
-		VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,	// VkStructureType                               sType;
-		NULL,								// const void*                                   pNext;
-		0,								// VkPipelineColorBlendStateCreateFlags          flags;
-		VK_FALSE,							// VkBool32                                      logicOpEnable;
-		VK_LOGIC_OP_COPY,						// VkLogicOp                                     logicOp;
-		1,								// uint32_t                                      attachmentCount;
-		&color_blend_attachment_state,					// const VkPipelineColorBlendAttachmentState*    pAttachments;
-		{0.0f,0.0f,0.0f,0.0f}						// float                                         blendConstants[4];
-	};
-
-	// Pipeline creation
-	VkPipelineLayoutCreateInfo layout_crinf = {
-		VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,	// VkStructureType                 sType;
-		NULL,						// const void*                     pNext;
-		0,						// VkPipelineLayoutCreateFlags     flags;
-		1,						// uint32_t                        setLayoutCount;
-		&vk.layout_ubo,					// const VkDescriptorSetLayout*    pSetLayouts;
-		0,						// uint32_t                        pushConstantRangeCount;
-		NULL						// const VkPushConstantRange*      pPushConstantRanges;
-	};
-	result = vkCreatePipelineLayout(vk.device, &layout_crinf, NULL, &vk.pipeline_layout);
-	if( result != VK_SUCCESS )
-	{
-		log_fatal("vkCreatePipelineLayout = %s", vulkan_result(result));
-		goto VK_INIT_PIPELINE_LAYOUT;
-	}
-
-	VkGraphicsPipelineCreateInfo pipeline_crinf = {
-		VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,	// VkStructureType                                  sType;
-		NULL,							// const void*                                      pNext;
-		0,							// VkPipelineCreateFlags                            flags;
-		2,							// uint32_t                                         stageCount;
-		&shader_stage_crinf[0],					// const VkPipelineShaderStageCreateInfo*           pStages;
-		&vertex_input_state_crinf,				// const VkPipelineVertexInputStateCreateInfo*      pVertexInputState;
-		&input_assembly_state_crinf,				// const VkPipelineInputAssemblyStateCreateInfo*    pInputAssemblyState;
-		NULL,							// const VkPipelineTessellationStateCreateInfo*     pTessellationState;
-		&viewport_state_crinf,					// const VkPipelineViewportStateCreateInfo*         pViewportState;
-		&rasterization_state_crinf,				// const VkPipelineRasterizationStateCreateInfo*    pRasterizationState;
-		&multisample_state_crinf,				// const VkPipelineMultisampleStateCreateInfo*      pMultisampleState;
-		&depth_stencil_state_crinf,				// const VkPipelineDepthStencilStateCreateInfo*     pDepthStencilState;
-		&color_blend_state_crinf,				// const VkPipelineColorBlendStateCreateInfo*       pColorBlendState;
-		NULL,							// const VkPipelineDynamicStateCreateInfo*          pDynamicState;
-		vk.pipeline_layout,					// VkPipelineLayout                                 layout;
-		vk.renderpass,							// VkRenderPass                                     renderPass;
-		0,							// uint32_t                                         subpass;
-		VK_NULL_HANDLE,						// VkPipeline                                       basePipelineHandle;
-		-1							// int32_t                                          basePipelineIndex;
-	};
-
-	result = vkCreateGraphicsPipelines(vk.device, VK_NULL_HANDLE, 1, &pipeline_crinf, NULL, &vk.pipeline);
-	if( result != VK_SUCCESS )
-	{
-		log_fatal("vkCreateGraphicsPipelines = %s", vulkan_result(result));
-		goto VK_INIT_PIPELINE;
-	}
 
 	// more commandbuffer
 	VkCommandBufferBeginInfo vk_cmdbegin = {
@@ -1672,7 +1326,7 @@ int vulkan_init(void)
 
 //	log_debug("this one");
 
-	vk_mesh_pipeline();
+	vk_pipeline_mesh();
 	bunny = wf_load("data/stanford-bunny.obj");
 
 
@@ -1782,14 +1436,14 @@ int vulkan_init(void)
 		};
 
 		VkBufferCopy buffer_copy[1] = {
-			0,		// VkDeviceSize    srcOffset;
-			0,		// VkDeviceSize    dstOffset;
-			ubo_buffer_size	// VkDeviceSize    size;
+			0,			// VkDeviceSize    srcOffset;
+			0,			// VkDeviceSize    dstOffset;
+			vk.mesh.ubo_size	// VkDeviceSize    size;
 		};
 		VkBufferCopy mesh_buffer_copy[1] = {
-			0,		// VkDeviceSize    srcOffset;
-			0,		// VkDeviceSize    dstOffset;
-			vk.mesh_ubo_host.size	// VkDeviceSize    size;
+			0,			// VkDeviceSize    srcOffset;
+			0,			// VkDeviceSize    dstOffset;
+			vk.mesh.ubo_host.size	// VkDeviceSize    size;
 		};
 
 		// fill the command buffer with commands
@@ -1798,7 +1452,7 @@ int vulkan_init(void)
 		
 //		vkCmdCopyBuffer( vk.sc_commandbuffer[i], vk.ubo_host.buffer, vk.ubo_device.buffer, 1, &buffer_copy[0]);
 
-		vkCmdCopyBuffer( vk.sc_commandbuffer[i], vk.mesh_ubo_host.buffer, vk.mesh_ubo_device.buffer, 1, &mesh_buffer_copy[0]);
+		vkCmdCopyBuffer( vk.sc_commandbuffer[i], vk.mesh.ubo_host.buffer, vk.mesh.ubo_device.buffer, 1, &mesh_buffer_copy[0]);
 
 
 
@@ -1809,9 +1463,9 @@ int vulkan_init(void)
 
 		vkCmdBeginRenderPass( vk.sc_commandbuffer[i], &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkCmdBindPipeline( vk.sc_commandbuffer[i], VK_PIPELINE_BIND_POINT_GRAPHICS, vk.mesh_pipeline);
+		vkCmdBindPipeline( vk.sc_commandbuffer[i], VK_PIPELINE_BIND_POINT_GRAPHICS, vk.mesh.pipeline);
 		vkCmdBindDescriptorSets( vk.sc_commandbuffer[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
-			vk.mesh_pipeline_layout, 0, 1, &vk.mesh_descriptor_set, 0, NULL);
+			vk.mesh.pipeline_layout, 0, 1, &vk.mesh.descriptor_set, 0, NULL);
 
 		VkDeviceSize poffset = 0;
 		vkCmdBindVertexBuffers( vk.sc_commandbuffer[i], 0, 1, &bunny->vertex_buffer.buffer, &poffset );
@@ -1853,24 +1507,8 @@ VK_INIT_ALLOC_COMMAND_BUFFERS:
 	vkDestroyCommandPool(vk.device, vk.commandpool, NULL);
 VK_INIT_COMMAND_POOL:
 VK_INIT_MALLOC_SWAPCHAIN:
-	vkDestroyPipeline(vk.device, vk.pipeline, NULL);
-VK_INIT_PIPELINE:
-	vkDestroyPipelineLayout(vk.device, vk.pipeline_layout, NULL);
-VK_INIT_PIPELINE_LAYOUT:
-	vkDestroyDescriptorSetLayout(vk.device, vk.layout_ubo, NULL);
-VK_INIT_DESCRIPTOR_SET_LAYOUT:
 	vkDestroyDescriptorPool(vk.device, vk.descriptor_pool, NULL);
 VK_INIT_DESCRIPTOR_POOL:
-	vkFreeMemory(vk.device, vk.ubo_device.memory, NULL);
-	vkDestroyBuffer(vk.device, vk.ubo_device.buffer, NULL);
-VK_INIT_UBO_DEVICE:
-	vkFreeMemory(vk.device, vk.ubo_host.memory, NULL);
-	vkDestroyBuffer(vk.device, vk.ubo_host.buffer, NULL);
-VK_INIT_UBO_HOST:
-	vkDestroyShaderModule(vk.device, vk.shader_frag, NULL);
-VK_INIT_CREATE_SHADER_FRAG:
-	vkDestroyShaderModule(vk.device, vk.shader_vert, NULL);
-VK_INIT_CREATE_SHADER_VERT:
 	vkDestroyRenderPass(vk.device, vk.renderpass, NULL);
 VK_INIT_RENDERPASS:
 	vkDestroySwapchainKHR(vk.device, vk.swapchain, NULL);
@@ -1894,7 +1532,7 @@ void vulkan_end(void)
 	VkResult result;
 	result = vkQueueWaitIdle(vk.queue);
 
-	vk_mesh_pipeline_end();
+	vk_pipeline_end(&vk.mesh);
 	wf_free(bunny);
 
 
@@ -1917,16 +1555,7 @@ void vulkan_end(void)
 	free(vk.sc_image);
 
 	vkDestroyCommandPool(vk.device, vk.commandpool, NULL);
-	vkDestroyPipeline(vk.device, vk.pipeline, NULL);
-	vkDestroyPipelineLayout(vk.device, vk.pipeline_layout, NULL);
-	vkDestroyDescriptorSetLayout(vk.device, vk.layout_ubo, NULL);
 	vkDestroyDescriptorPool(vk.device, vk.descriptor_pool, NULL);
-	vkFreeMemory(vk.device, vk.ubo_device.memory, NULL);
-	vkDestroyBuffer(vk.device, vk.ubo_device.buffer, NULL);
-	vkFreeMemory(vk.device, vk.ubo_host.memory, NULL);
-	vkDestroyBuffer(vk.device, vk.ubo_host.buffer, NULL);
-	vkDestroyShaderModule(vk.device, vk.shader_vert, NULL);
-	vkDestroyShaderModule(vk.device, vk.shader_frag, NULL);
 	vkDestroyRenderPass(vk.device, vk.renderpass, NULL);
 	vkDestroySwapchainKHR(vk.device, vk.swapchain, NULL);
 	vkDestroySurfaceKHR(vk.instance, vk.surface, NULL);
@@ -1954,7 +1583,7 @@ int vulkan_loop(float current_time)
 //	log_debug("current = %d, next = %d", vk.current_image, next_image);
 
 	void * data;
-	result = vkMapMemory(vk.device, vk.mesh_ubo_host.memory, 0, vk.mesh_ubo_host.size, 0, &data);
+	result = vkMapMemory(vk.device, vk.mesh.ubo_host.memory, 0, vk.mesh.ubo_host.size, 0, &data);
 	if(result != VK_SUCCESS)
 	{
 		log_warning("vkMapMemory = %s", vulkan_result(result));
@@ -1978,7 +1607,7 @@ int vulkan_loop(float current_time)
 	ubo->projection = proj;
 	ubo->time = current_time;
 
-	vkUnmapMemory(vk.device, vk.mesh_ubo_host.memory);
+	vkUnmapMemory(vk.device, vk.mesh.ubo_host.memory);
 
 	VkPipelineStageFlags vkflags = VK_PIPELINE_STAGE_TRANSFER_BIT;
 	VkSubmitInfo submit_info = {

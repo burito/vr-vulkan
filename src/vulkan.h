@@ -48,6 +48,28 @@ struct VULKAN_BUFFER {
 	VkDeviceSize size;
 };
 
+
+struct VULKAN_PIPELINE {
+	// for creating the object;
+	size_t shader_vertex_size;
+	const uint32_t* shader_vertex_code;
+	size_t shader_fragment_size;
+	const uint32_t* shader_fragment_code;
+	VkPipelineVertexInputStateCreateInfo *vertex_input_state_crinf;
+	uint32_t ubo_size;
+
+	// things that need to be deleted on shutdown
+	VkShaderModule shader_vertex;
+	VkShaderModule shader_fragment;
+	VkDescriptorSetLayout descriptor_set_layout;
+	VkDescriptorSet descriptor_set;
+	struct VULKAN_BUFFER ubo_host;
+	struct VULKAN_BUFFER ubo_device;
+	VkPipelineLayout pipeline_layout;
+	VkPipeline pipeline;
+};
+
+
 struct VULKAN_HANDLES {
 	VkInstance instance;
 	VkSurfaceKHR surface;
@@ -63,12 +85,6 @@ struct VULKAN_HANDLES {
 	VkPhysicalDeviceProperties device_properties;
 
 	VkDescriptorPool descriptor_pool;
-	VkDescriptorSetLayout layout_ubo;
-	VkDescriptorSet descriptor_set;
-	struct VULKAN_BUFFER ubo_host;
-	struct VULKAN_BUFFER ubo_device;
-	VkShaderModule shader_vert;
-	VkShaderModule shader_frag;
 
 	uint32_t display_buffer_count;
 	VkSemaphore *sc_semaphore;
@@ -80,15 +96,7 @@ struct VULKAN_HANDLES {
 
 	int current_image;
 
-	VkShaderModule mesh_shader_vert;
-	VkShaderModule mesh_shader_frag;
-	struct VULKAN_BUFFER mesh_ubo_host;
-	struct VULKAN_BUFFER mesh_ubo_device;
-	VkDescriptorSetLayout mesh_ubo_layout;
-	VkDescriptorSet mesh_descriptor_set;
-	VkRenderPass mesh_renderpass;
-	VkPipelineLayout mesh_pipeline_layout;
-	VkPipeline mesh_pipeline;
+	struct VULKAN_PIPELINE mesh;
 };
 extern struct VULKAN_HANDLES vk;
 

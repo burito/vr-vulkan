@@ -399,12 +399,12 @@ int vr_init(void)
 		vk_framebuffer( m_nRenderWidth, m_nRenderHeight, &right_eye_fb);
 	}
 	return 0;
-#ifdef NOT_NOW
 
+/*
 	if(!eye_prog) eye_prog = shader_load(
 			"data/shaders/window.vert",
 			"data/shaders/window.frag" );
-
+*/
 	float eye_verts[] = {
 		// left eye
 		-0.9f, -0.9f, 0.0f, 0.0f,

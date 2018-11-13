@@ -404,7 +404,7 @@ int vr_init(void)
 	if(!eye_prog) eye_prog = shader_load(
 			"data/shaders/window.vert",
 			"data/shaders/window.frag" );
-*/
+
 	float eye_verts[] = {
 		// left eye
 		-0.9f, -0.9f, 0.0f, 0.0f,
@@ -443,7 +443,7 @@ int vr_init(void)
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 	}
-#endif
+*/
 	vr_using = 1;
 }
 

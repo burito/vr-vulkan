@@ -86,6 +86,7 @@ struct VULKAN_HANDLES {
 
 	VkDescriptorPool descriptor_pool;
 
+	VkPresentModeKHR present_mode;
 	uint32_t display_buffer_count;
 	VkSemaphore *sc_semaphore;
 	VkCommandBuffer *sc_commandbuffer;

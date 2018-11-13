@@ -14,6 +14,9 @@
 		"xlocale": "c",
 		"vk_platform.h": "c",
 		"initializer_list": "c",
-		"string_view": "c"
+		"string_view": "c",
+		"*.tcc": "cpp",
+		"deque": "cpp",
+		"vector": "cpp"
 	}
 }

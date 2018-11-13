@@ -26,8 +26,9 @@ freely, subject to the following restrictions:
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include <stdlib.h>
 #include <stdio.h>
+
+#include <stdlib.h>
 #include <string.h>
 #include "3dmaths.h"
 #include "mesh.h"
@@ -171,7 +172,8 @@ static WF_MTL* mtl_newmtl(char *hostpath, FILE *fptr, char *name)
 			default:  targeti = NULL; break;
 			}
 			if(!targeti)break;
-			while(!whitespace(buf[i]))i++;i++;
+			while(!whitespace(buf[i]))i++;
+			i++;
 			path = repath(hostpath, buf+i);
 			*targeti = img_load(path);
 			free(path);
@@ -402,7 +404,7 @@ static void wf_vertex_normals(WF_OBJ *w)
 	{
 		tmp = vert[i].next;
 		if(!tmp)continue;
-		vect t = {0,0,0};
+		vect t = {{0,0,0}};
 		while(tmp)
 		{
 			t = add(t, w->f[tmp->face].normal);
@@ -708,11 +710,13 @@ WF_OBJ* wf_parse(char *filename)
 
 			while(' '==buf[i])i++;
 			target->x = fast_atof(buf+i);
-			while(' '!=buf[i])i++; i++;
+			while(' '!=buf[i])i++;
+			i++;
 			target->y = fast_atof(buf+i);
 			if(buf[1]!='t')
 			{
-				while(' '!=buf[i])i++; i++;
+				while(' '!=buf[i])i++;
+				i++;
 				target->z = fast_atof(buf+i);
 			}
 			else
@@ -756,13 +760,15 @@ WF_OBJ* wf_parse(char *filename)
 				w->f[fi].f.x = tmp;
 
 //					log_trace("%d/", g->f[g->nf].x);
-				while(' '!=buf[i])i++; i++;	//find next space
+				while(' '!=buf[i])i++;
+				i++;	//find next space
 				tmp = atoi(buf+i);
 				if(tmp < 0)tmp += w->nv;
 				else tmp--;
 				w->f[fi].f.y = tmp;
 //					log_trace("%d/", g->f[g->nf].y);
-				while(' '!=buf[i])i++; i++;
+				while(' '!=buf[i])i++;
+				i++;
 				tmp = atoi(buf+i);
 				if(tmp < 0)tmp += w->nv;
 				else tmp--;
@@ -802,30 +808,35 @@ WF_OBJ* wf_parse(char *filename)
 				if(tmp < 0)tmp += w->nv;
 				else tmp--;
 				w->f[fi].f.x = tmp;
-				while('/'!=buf[i])i++; i++;	//find next slash
+				while('/'!=buf[i])i++;
+				i++;	//find next slash
 				tmp = atoi(buf+i);
 				if(tmp < 0)tmp += w->nt;
 				else tmp--;
 				w->f[fi].t.x = tmp;
 
 //					log_debug("%d/", g->f[g->nf].x);
-				while(' '!=buf[i])i++; i++;	//find next space
+				while(' '!=buf[i])i++;
+				i++;	//find next space
 				tmp = atoi(buf+i);
 				if(tmp < 0)tmp += w->nv;
 				else tmp--;
 				w->f[fi].f.y = tmp;
-				while('/'!=buf[i])i++; i++;	//find next slash
+				while('/'!=buf[i])i++;
+				i++;	//find next slash
 				tmp = atoi(buf+i);
 				if(tmp < 0)tmp += w->nt;
 				else tmp--;
 				w->f[fi].t.y = tmp;
 //					log_debug("%d/", g->f[g->nf].y);
-				while(' '!=buf[i])i++; i++;
+				while(' '!=buf[i])i++;
+				i++;
 				tmp = atoi(buf+i);
 				if(tmp < 0)tmp += w->nv;
 				else tmp--;
 				w->f[fi].f.z = tmp;
-				while('/'!=buf[i])i++; i++;	//find next slash
+				while('/'!=buf[i])i++;
+				i++;	//find next slash
 				tmp = atoi(buf+i);
 				if(tmp < 0)tmp += w->nt;
 				else tmp--;
@@ -853,7 +864,8 @@ WF_OBJ* wf_parse(char *filename)
 						if(tmp < 0) tmp += w->nv;
 						else tmp--;
 						w->f[fi].f.z = tmp;
-						while('/'!=buf[i])i++; i++;	//find next slash
+						while('/'!=buf[i])i++;
+						i++;	//find next slash
 						tmp = atoi(buf+i);
 						if(tmp < 0)tmp += w->nt;
 						else tmp--;
@@ -870,21 +882,26 @@ WF_OBJ* wf_parse(char *filename)
 				break;
 		case 3:
 				w->f[fi].f.x = abs(atoi(buf+i))-1;
-				while('/'!=buf[i])i++; i++;
+				while('/'!=buf[i])i++;
+				i++;
 				if(buf[i]!='/')w->f[fi].t.x = abs(atoi(buf+i))-1;
 //				while('/'!=buf[i])i++; i++;
 //				if(buf[i]!=' ')w->f[fi].n.x = abs(atoi(buf+i))-1;
 
-				while(' '!=buf[i])i++; i++;	//find next space
+				while(' '!=buf[i])i++;
+				i++;	//find next space
 				w->f[fi].f.y = abs(atoi(buf+i))-1;
-				while('/'!=buf[i])i++; i++;
+				while('/'!=buf[i])i++;
+				i++;
 				if(buf[i]!='/')w->f[fi].t.y = abs(atoi(buf+i))-1;
 //				while('/'!=buf[i])i++; i++;
 //				if(buf[i]!=' ')w->f[fi].n.y = abs(atoi(buf+i))-1;
 
-				while(' '!=buf[i])i++; i++;	//find next space
+				while(' '!=buf[i])i++;
+				i++;	//find next space
 				w->f[fi].f.z = abs(atoi(buf+i))-1;
-				while('/'!=buf[i])i++; i++;
+				while('/'!=buf[i])i++;
+				i++;
 				if(buf[i]!='/')w->f[fi].t.z = abs(atoi(buf+i))-1;
 //				while('/'!=buf[i])i++; i++;
 //				if(buf[i]!=' ')w->f[fi].n.z = abs(atoi(buf+i))-1;
@@ -909,7 +926,8 @@ WF_OBJ* wf_parse(char *filename)
 						w->f[fi].t.y = w->f[last].t.z;
 						w->f[fi].n.y = w->f[last].n.z;
 				w->f[fi].f.z = abs(atoi(buf+i))-1;
-				while('/'!=buf[i])i++; i++;
+				while('/'!=buf[i])i++;
+				i++;
 				if(buf[i]!='/')w->f[fi].t.z = abs(atoi(buf+i))-1;
 //				while('/'!=buf[i])i++; i++;
 //				if(buf[i]!=' ')w->f[fi].n.z = abs(atoi(buf+i))-1;

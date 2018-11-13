@@ -24,6 +24,7 @@ freely, subject to the following restrictions:
 #include <windows.h>
 #include <Xinput.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include "log.h"
 ///////////////////////////////////////////////////////////////////////////////
@@ -52,10 +53,13 @@ int main_init(int argc, char *argv[]);
 void main_loop(void);
 void main_end(void);
 
-const int sys_ticksecond = 1000;
-long long sys_time(void)
+uint64_t sys_ticksecond = 1000;
+static uint64_t sys_time_start = 0;
+uint64_t sys_time(void)
 {
-	return timeGetTime();
+	uint64_t now;
+	QueryPerformanceCounter((LARGE_INTEGER*)&now);
+	return now - sys_time_start;
 }
 
 void shell_browser(char *url)
@@ -85,6 +89,9 @@ joystick joy[4];
 HINSTANCE hInst;
 HWND hWnd;
 
+void vulkan_resize(void);
+
+int win_resizing = 0;
 int CmdShow;
 
 int win_width  = 0;	/* used for switching from fullscreen back to window */
@@ -190,9 +197,21 @@ static LONG WINAPI wProc(HWND hWndProc, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	case WM_SIZE:
 		vid_width = LOWORD(lParam);
 		vid_height = HIWORD(lParam);
-		// TODO: tell vulkan about resize?
+		if( win_resizing )
+		{
+			if(wParam == 8)return 0;
+			log_warning("resize=%d: wParam=%d, loword=%d, hiword=%d", win_resizing, wParam, LOWORD(lParam), HIWORD(lParam) );
+			vulkan_resize();
+		}
 		PostMessage(hWndProc, WM_PAINT, 0, 0);
 		return 0;
+	case WM_ENTERSIZEMOVE:
+		win_resizing = 1;
+		break;
+	case WM_EXITSIZEMOVE:
+		win_resizing = 0;
+		break;
+
 
 	case WM_KEYDOWN:
 		bit = 1;
@@ -431,6 +450,9 @@ int APIENTRY WinMain(HINSTANCE hCurrentInst, HINSTANCE hPrev,
 {
 	hInst = hCurrentInst;
 	CmdShow = nCmdShow;
+	QueryPerformanceFrequency((LARGE_INTEGER*)&sys_ticksecond);
+	QueryPerformanceCounter((LARGE_INTEGER*)&sys_time_start);
+
 	log_init();
 	log_info("Platform    : win32");
 	/* Convert win32 style arguments to standard format */
@@ -475,6 +497,7 @@ int APIENTRY WinMain(HINSTANCE hCurrentInst, HINSTANCE hPrev,
 	}
 
 	main_end();
+	log_info("Shutdown : Ok");
 	win_end();
 	return 0;
 }

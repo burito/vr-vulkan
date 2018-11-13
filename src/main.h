@@ -41,8 +41,8 @@ int main_init(int argc, char *argv[]);
 void main_loop(void);
 void main_end(void);
 
-extern const int sys_ticksecond;	/* ticks in a second */
-long long sys_time(void);
+extern const uint64_t sys_ticksecond;	/* ticks in a second */
+uint64_t sys_time(void);
 
 void shell_browser(char *url);
 
@@ -61,8 +61,6 @@ typedef struct joystick
 } joystick;
 
 extern joystick joy[4];
-
-extern float time;
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846

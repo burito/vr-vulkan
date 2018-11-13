@@ -179,7 +179,6 @@ float vect_max(vect v)
 
 vect vect_norm(vect v)
 {
-	vect x;
 	float len = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
 	float scale = 1.0f / len;
 	return mul(v,scale);

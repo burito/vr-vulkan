@@ -10,8 +10,8 @@
 void invert4x4(const float * src, float * dst)
 {
     __m128 minor0, minor1, minor2, minor3;
-    __m128 row0, row1, row2, row3;
-    __m128 det, tmp1;
+    __m128 row0, row1 = {0}, row2 = {0}, row3 = {0};
+    __m128 det, tmp1 = {0};
 
     tmp1 = _mm_loadh_pi(_mm_loadl_pi(tmp1, (__m64*)(src)), (__m64*)(src+ 4));
     row1 = _mm_loadh_pi(_mm_loadl_pi(row1, (__m64*)(src+8)), (__m64*)(src+12));

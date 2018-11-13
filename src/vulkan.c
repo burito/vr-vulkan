@@ -122,6 +122,63 @@ int find_memory_type(VkMemoryRequirements requirements, VkMemoryPropertyFlags wa
 	return 0;
 }
 
+
+VkResult vk_surface(void)
+{
+	VkResult result;
+#ifdef VK_USE_PLATFORM_XCB_KHR
+	VkXcbSurfaceCreateInfoKHR vksi = {
+		VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,	// VkStructureType               sType;
+		NULL,						// const void*                   pNext;
+		0,						// VkXcbSurfaceCreateFlagsKHR    flags;
+		xcb,						// xcb_connection_t*             connection;
+		window						// xcb_window_t                  window;
+	};
+	result = vkCreateXcbSurfaceKHR(vk.instance, &vksi, NULL, &vk.surface);
+	char os_surface_func[] = "Xcb";
+#endif
+
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+	VkXlibSurfaceCreateInfoKHR vksi = {
+		VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR,	// VkStructureType                sType;
+		NULL,						// const void*                    pNext;
+		0,						// VkXlibSurfaceCreateFlagsKHR    flags;
+		display,					// Display*                       dpy;
+		window						// Window                         window;
+	};
+	result = vkCreateXlibSurfaceKHR(vk.instance, &vksi, NULL, &vk.surface);
+	char os_surface_func[] ="Xlib";
+#endif
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+	VkWin32SurfaceCreateInfoKHR vksi = {
+		VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,// VkStructureType                 sType;
+		NULL,						// const void*                     pNext;
+		0,						// VkWin32SurfaceCreateFlagsKHR    flags;
+		hInst,						// HINSTANCE                       hinstance;
+		hWnd						// HWND                            hwnd;
+	};
+	result = vkCreateWin32SurfaceKHR(vk.instance, &vksi, NULL, &vk.surface);
+	char os_surface_func[] ="Win32";
+#endif
+
+#ifdef VK_USE_PLATFORM_MACOS_MVK
+	VkMacOSSurfaceCreateInfoMVK vksi = {
+		VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK,// VkStructureType                 sType;
+		NULL,						// const void*                     pNext;
+		0,						// VkMacOSSurfaceCreateFlagsMVK    flags;
+		pView						// const void*                     pView;
+	};
+	result = vkCreateMacOSSurfaceMVK(vk.instance, &vksi, NULL, &vk.surface);
+	char os_surface_func[] = "MacOS";
+#endif
+	if( result != VK_SUCCESS )
+	{
+		log_fatal("vkCreate%sSurfaceMVK = %s", os_surface_func, vulkan_result(result));
+	}
+	return result;
+}
+
 VkResult vk_buffer(VkBufferUsageFlags usage, VkMemoryPropertyFlags flags, struct VULKAN_BUFFER *x, VkDeviceSize size, void *data)
 {
 	VkResult result;
@@ -320,7 +377,6 @@ VkResult vk_imagebuffer(int x, int y, VkFormat format, VkImageUsageFlags usage, 
 		}
 	};
 
-	VkImageView imageview;
 	result = vkCreateImageView(vk.device, &image_view_crinf, NULL, &b->imageview);
 	if( result != VK_SUCCESS )
 	{
@@ -831,6 +887,7 @@ void vk_pipeline_mesh(void)
 int vulkan_init(void)
 {
 	VkResult result;
+	vk.finished_initialising = 0;
 
 	int layer_count = 1;
 	const char *layer_names[] = {
@@ -903,18 +960,20 @@ int vulkan_init(void)
 		}
 	}
 
+	vk.physical_device = &vkpd[desired_device];
+
 	// we just want this information, to put in a log
-	vkGetPhysicalDeviceProperties(vkpd[desired_device], &vk.device_properties);
+	vkGetPhysicalDeviceProperties(*vk.physical_device, &vk.device_properties);
 	// we need this information for later.
-	vkGetPhysicalDeviceMemoryProperties(vkpd[desired_device], &vk.device_mem_props);
+	vkGetPhysicalDeviceMemoryProperties(*vk.physical_device, &vk.device_mem_props);
 
 	log_info("GPU         : %s", vk.device_properties.deviceName);
 	log_info("GPU VRAM    : %dMb", desired_device_vram);
 
 	uint32_t queuefamily_count = 0;
-	vkGetPhysicalDeviceQueueFamilyProperties(vkpd[desired_device], &queuefamily_count, NULL);
+	vkGetPhysicalDeviceQueueFamilyProperties(*vk.physical_device, &queuefamily_count, NULL);
 	VkQueueFamilyProperties *queuefamily_properties = malloc(sizeof(VkQueueFamilyProperties) * queuefamily_count);
-	vkGetPhysicalDeviceQueueFamilyProperties(vkpd[desired_device], &queuefamily_count, queuefamily_properties);
+	vkGetPhysicalDeviceQueueFamilyProperties(*vk.physical_device, &queuefamily_count, queuefamily_properties);
 	uint32_t desired_queuefamily = UINT32_MAX;
 	for(int i=0; i<queuefamily_count; i++)
 	{
@@ -963,75 +1022,39 @@ int vulkan_init(void)
 		vk_dext_str,				// const char* const*                 ppEnabledExtensionNames;
 		0					// const VkPhysicalDeviceFeatures*    pEnabledFeatures;
 	};
-	result = vkCreateDevice(vkpd[desired_device], &vkdci, 0, &vk.device);
+	result = vkCreateDevice(*vk.physical_device, &vkdci, 0, &vk.device);
 	if( result != VK_SUCCESS )
 	{
 		log_fatal("vkCreateDevice = %s", vulkan_result(result));
 		goto VK_INIT_CREATEDEVICE;
 	}
 
-#ifdef VK_USE_PLATFORM_XCB_KHR
-	VkXcbSurfaceCreateInfoKHR vksi = {
-		VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,	// VkStructureType               sType;
-		NULL,						// const void*                   pNext;
-		0,						// VkXcbSurfaceCreateFlagsKHR    flags;
-		xcb,						// xcb_connection_t*             connection;
-		window						// xcb_window_t                  window;
-	};
-	result = vkCreateXcbSurfaceKHR(vk.instance, &vksi, NULL, &vk.surface);
-	char os_surface_func[] = "Xcb";
-#endif
-
-#ifdef VK_USE_PLATFORM_XLIB_KHR
-	VkXlibSurfaceCreateInfoKHR vksi = {
-		VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR,	// VkStructureType                sType;
-		NULL,						// const void*                    pNext;
-		0,						// VkXlibSurfaceCreateFlagsKHR    flags;
-		display,					// Display*                       dpy;
-		window						// Window                         window;
-	};
-	result = vkCreateXlibSurfaceKHR(vk.instance, &vksi, NULL, &vk.surface);
-	char os_surface_func[] ="Xlib";
-#endif
-
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-	VkWin32SurfaceCreateInfoKHR vksi = {
-		VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,// VkStructureType                 sType;
-		NULL,						// const void*                     pNext;
-		0,						// VkWin32SurfaceCreateFlagsKHR    flags;
-		hInst,						// HINSTANCE                       hinstance;
-		hWnd						// HWND                            hwnd;
-	};
-	result = vkCreateWin32SurfaceKHR(vk.instance, &vksi, NULL, &vk.surface);
-	char os_surface_func[] ="Win32";
-#endif
-
-#ifdef VK_USE_PLATFORM_MACOS_MVK
-	VkMacOSSurfaceCreateInfoMVK vksi = {
-		VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK,// VkStructureType                 sType;
-		NULL,						// const void*                     pNext;
-		0,						// VkMacOSSurfaceCreateFlagsMVK    flags;
-		pView						// const void*                     pView;
-	};
-	result = vkCreateMacOSSurfaceMVK(vk.instance, &vksi, NULL, &vk.surface);
-	char os_surface_func[] = "MacOS";
-#endif
+	result = vk_surface();
 	if( result != VK_SUCCESS )
 	{
-		log_fatal("vkCreate%sSurfaceMVK = %s", os_surface_func, vulkan_result(result));
+		log_fatal("vk_result = %s", vulkan_result(result));
 		goto VK_INIT_CREATESURFACE;
 	}
 
+	// get the surface capabilities
+
+	result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(*vk.physical_device, vk.surface, &vk.surface_caps);
+	if( result != VK_SUCCESS )
+	{
+		log_warning("vkGetPhysicalDeviceSurfaceCapabilitiesKHR = %s", vulkan_result(result));
+	}
+
+
 	VkBool32 present_supported = VK_FALSE;
-	result = vkGetPhysicalDeviceSurfaceSupportKHR(vkpd[desired_device], desired_queuefamily, vk.surface, &present_supported);
+	result = vkGetPhysicalDeviceSurfaceSupportKHR(*vk.physical_device, desired_queuefamily, vk.surface, &present_supported);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkGetPhysicalDeviceSurfaceSupportKHR = %s", vulkan_result(result));
 	}
 	log_info("vkGetPhysicalDeviceSurfaceSupportKHR(%d) = %s", desired_queuefamily, present_supported?"VK_TRUE":"VK_FALSE");
-
+	
 	uint32_t surface_format_count = 0;
-	result = vkGetPhysicalDeviceSurfaceFormatsKHR(vkpd[desired_device], vk.surface, &surface_format_count, NULL);
+	result = vkGetPhysicalDeviceSurfaceFormatsKHR(*vk.physical_device, vk.surface, &surface_format_count, NULL);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkGetPhysicalDeviceSurfaceFormatsKHR(NULL) = %s", vulkan_result(result));
@@ -1045,7 +1068,7 @@ int vulkan_init(void)
 		free(surface_formats);
 		goto VK_INIT_SURFACEFORMATS;
 	}
-	result = vkGetPhysicalDeviceSurfaceFormatsKHR(vkpd[desired_device], vk.surface, &surface_format_count, surface_formats);
+	result = vkGetPhysicalDeviceSurfaceFormatsKHR(*vk.physical_device, vk.surface, &surface_format_count, surface_formats);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkGetPhysicalDeviceSurfaceFormatsKHR = %s", vulkan_result(result));
@@ -1073,17 +1096,17 @@ int vulkan_init(void)
 		return 1;
 	}
 
-	// get the surface capabilities
-	VkSurfaceCapabilitiesKHR surface_caps;
-	result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vkpd[desired_device], vk.surface, &surface_caps);
-	if( result != VK_SUCCESS )
-	{
-		log_warning("vkGetPhysicalDeviceSurfaceCapabilitiesKHR = %s", vulkan_result(result));
-	}
+
+	// how many swapchain images do we want?
+	int wanted_image_count = 3;
+	vk.display_buffer_count = vk.surface_caps.minImageCount;
+	if( wanted_image_count > vk.surface_caps.maxImageCount)
+		wanted_image_count = vk.surface_caps.maxImageCount;
+	vk.display_buffer_count = wanted_image_count;
 
 	// and the present modes
 	uint32_t present_mode_count = 0;
-	result = vkGetPhysicalDeviceSurfacePresentModesKHR(vkpd[desired_device], vk.surface, &present_mode_count, NULL);
+	result = vkGetPhysicalDeviceSurfacePresentModesKHR(*vk.physical_device, vk.surface, &present_mode_count, NULL);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkGetPhysicalDeviceSurfacePresentModesKHR(NULL) = %s", vulkan_result(result));
@@ -1095,7 +1118,7 @@ int vulkan_init(void)
 		log_fatal("malloc(VkPresentModeKHR)");
 		goto VK_INIT_PRESENTMODES;
 	}
-	result = vkGetPhysicalDeviceSurfacePresentModesKHR(vkpd[desired_device], vk.surface, &present_mode_count, present_modes);
+	result = vkGetPhysicalDeviceSurfacePresentModesKHR(*vk.physical_device, vk.surface, &present_mode_count, present_modes);
 	if( result != VK_SUCCESS )
 	{
 		log_warning("vkGetPhysicalDeviceSurfacePresentModesKHR = %s", vulkan_result(result));
@@ -1133,12 +1156,6 @@ int vulkan_init(void)
 	free(present_modes); // don't need this anymore
 
 
-	// how many swapchain images do we want?
-	int wanted_image_count = 3;
-	vk.display_buffer_count = surface_caps.minImageCount;
-	if( wanted_image_count > surface_caps.maxImageCount)
-		wanted_image_count = surface_caps.maxImageCount;
-	vk.display_buffer_count = wanted_image_count;
 
 	vkGetDeviceQueue(vk.device, desired_queuefamily, 0, &vk.queue);
 	log_debug("vkGetDeviceQueue");
@@ -1235,7 +1252,7 @@ int vulkan_init(void)
 	VkCommandPoolCreateInfo vk_cmdpoolcrinf = {
 		VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,	// VkStructureType             sType;
 		NULL,						// const void*                 pNext;
-		0,						// VkCommandPoolCreateFlags    flags;
+		VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,						// VkCommandPoolCreateFlags    flags;
 		0						// uint32_t                    queueFamilyIndex;
 	};
 
@@ -1299,6 +1316,7 @@ int vulkan_init(void)
 
 
 	vk.current_image = vk.display_buffer_count - 1;
+	vk.finished_initialising = 1;
 	log_debug("Vulkan Initialisation complete");
 	return 0;
 
@@ -1327,7 +1345,6 @@ VK_INIT_SWAPCHAIN:
 VK_INIT_PRESENTMODES:
 VK_INIT_SURFACEFORMATS:
 VK_INIT_SURFACESUPPORT:
-	vkDestroySurfaceKHR(vk.instance, vk.surface, NULL);
 VK_INIT_CREATESURFACE:
 	vkDestroyDevice(vk.device, NULL);
 VK_INIT_CREATEDEVICE:
@@ -1386,7 +1403,7 @@ int vulkan_loop(float current_time)
 		switch(result) {
 		case VK_ERROR_OUT_OF_DATE_KHR:
 		case VK_ERROR_DEVICE_LOST:
-			return 1;
+//			return 1;
 		default:
 			break;
 		}
@@ -1462,7 +1479,6 @@ int vulkan_loop(float current_time)
 int vk_swapchain_init(void)
 {
 	VkResult result;
-	vkDeviceWaitIdle(vk.device);
 
 	// create the swapchain
 	VkExtent2D vk_extent = {vid_width, vid_height};
@@ -1649,15 +1665,11 @@ void vk_commandbuffers(void)
 			image_subresource_range			// VkImageSubresourceRange    subresourceRange;
 		};
 
-		VkBufferCopy buffer_copy[1] = {
+
+		VkBufferCopy mesh_buffer_copy = {
 			0,			// VkDeviceSize    srcOffset;
 			0,			// VkDeviceSize    dstOffset;
 			vk.mesh.ubo_size	// VkDeviceSize    size;
-		};
-		VkBufferCopy mesh_buffer_copy[1] = {
-			0,			// VkDeviceSize    srcOffset;
-			0,			// VkDeviceSize    dstOffset;
-			vk.mesh.ubo_host.size	// VkDeviceSize    size;
 		};
 
 		// fill the command buffer with commands
@@ -1666,7 +1678,7 @@ void vk_commandbuffers(void)
 		
 //		vkCmdCopyBuffer( vk.sc_commandbuffer[i], vk.ubo_host.buffer, vk.ubo_device.buffer, 1, &buffer_copy[0]);
 
-		vkCmdCopyBuffer( vk.sc_commandbuffer[i], vk.mesh.ubo_host.buffer, vk.mesh.ubo_device.buffer, 1, &mesh_buffer_copy[0]);
+		vkCmdCopyBuffer( vk.sc_commandbuffer[i], vk.mesh.ubo_host.buffer, vk.mesh.ubo_device.buffer, 1, &mesh_buffer_copy);
 
 
 
@@ -1697,4 +1709,26 @@ void vk_commandbuffers(void)
 		if( result != VK_SUCCESS ) { log_warning("vkEndCommandBuffer = %s", vulkan_result(result)); }
 //		log_debug("command buffer %d filled", i+1);
 	}
+}
+
+
+void vulkan_resize(void)
+{
+	VkResult result;
+	if(vk.finished_initialising != 1) return;
+
+	log_info("resize x = %d, y = %d", vid_width, vid_height);
+
+	vkDeviceWaitIdle(vk.device);
+	vk_swapchain_end();
+	vkDestroySurfaceKHR(vk.instance, vk.surface, NULL);
+
+	result = vk_surface();
+	if( result != VK_SUCCESS )
+	{
+		log_fatal("vk_surface = %s", vulkan_result(result));
+//		goto VK_SWAPCHAIN_SURFACE;
+	}
+	vk_swapchain_init();
+	vk_commandbuffers();
 }

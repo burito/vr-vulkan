@@ -19,17 +19,19 @@ freely, subject to the following restrictions:
 */
 
 
-#include "log.h"
-
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdint.h>
-
+#include <math.h>
 #include <time.h>
+
+#include "main.h"
+#include "log.h"
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+
 
 #ifndef __GNUC__
 // https://stackoverflow.com/questions/5404277/porting-clock-gettime-to-windows
@@ -109,12 +111,21 @@ void log_out(char* file, int line, enum LOG_LEVEL level, char *fmt, ...)
 	char time_buf [128];
 	struct timespec tv;
 #ifdef _WIN32
+	time_buf[0] = 0;
+	time_str_offset = 0;
+	double now = (double)sys_time() / (double)sys_ticksecond;
+	tv.tv_nsec = fmod( now, 1.0) * 1000000000.0f;
+	tv.tv_sec = (uint64_t)now;
 
+	printf( "%lld.%09ld %s ",
+		tv.tv_sec, tv.tv_nsec,
+		log_label(level) );
+/*
 	clock_gettime(0, &tv); // CLOCK_MONOTONIC?
 	struct tm tm_now;
 	localtime_s( &tm_now, &tv.tv_sec);
 	strftime( time_buf, 128, "%Y-%m-%dT%H:%M:%S", &tm_now);
-
+*/
 #else
 	clock_gettime(0, &tv); // CLOCK_MONOTONIC?
 	struct tm *tm_now;
@@ -122,10 +133,11 @@ void log_out(char* file, int line, enum LOG_LEVEL level, char *fmt, ...)
 	tm_now = localtime(&tv.tv_sec);
 	strftime( time_buf, 128, "%Y-%m-%dT%H:%M:%S", tm_now);
 
-#endif
 	printf( "%s.%09ld %s ",
 		time_buf + time_str_offset, tv.tv_nsec,
 		log_label(level) );
+#endif
+
 
 	va_list args;
 	va_start(args, fmt);		

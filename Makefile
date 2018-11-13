@@ -36,16 +36,21 @@ else
 BUILD_DIR = $(WIN_DIR)
 GLSLANG = deps/win/glslangValidator.exe
 WINDRES = windres
-CC = gcc -g
+CC = clang -target x86_64-pc-windows-gnu -g
 default: vulkan.exe
+$(shell	cp deps/win/openvr_api.dll .)
 endif
 endif
 
 OBJS = main.o log.o vr.o vulkan.o vulkan_helper.o version.o 3dmaths.o text.o mesh.o image.o stb_image.o fast_atof.o
-CFLAGS = -Ideps/include -Ibuild
+CFLAGS = -std=c11 -Ideps/include -Ibuild -Wno-deprecated-declarations
 VPATH = src build deps
 
-WIN_LIBS = c:/Windows/system32/vulkan-1.dll openvr_api.dll -luser32 -lwinmm -lgdi32 -lXInput
+WIN_LIBS = -luser32 -lwinmm -lgdi32 -lXInput -lshell32
+# use this line with gcc
+WIN_LIBS += c:/Windows/system32/vulkan-1.dll openvr_api.dll 
+# use this line with clang/msvc
+#WIN_LIBS += -Ldeps/win -lopenvr_api.lib -lvulkan-1
 LIN_LIBS = -Ldeps/lin -lvulkan -lxcb -lm -lopenvr_api
 MAC_LIBS = -Ldeps/mac -lMoltenVK -lopenvr_api -framework CoreVideo -framework QuartzCore -rpath . -framework Cocoa
 # replace -lxcb with -lX11 if using Xlib
@@ -88,7 +93,7 @@ openvr_api.dll: deps/win/openvr_api.dll
 libopenvr_api.so: deps/lin/libopenvr_api.so
 	cp $< $@
 
-vulkan.exe: $(WIN_OBJS) openvr_api.dll
+vulkan.exe: $(WIN_OBJS)
 	$(CC) $^ $(WIN_LIBS) -o $@
 
 vulkan: $(LIN_OBJS) libopenvr_api.so

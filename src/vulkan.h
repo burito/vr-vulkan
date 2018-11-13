@@ -74,6 +74,9 @@ struct VULKAN_HANDLES {
 	VkInstance instance;
 	VkSurfaceKHR surface;
 	VkDevice device;
+	VkPhysicalDevice *physical_device;
+	VkSurfaceCapabilitiesKHR surface_caps;
+	uint32_t desired_queuefamily;
 	VkSwapchainKHR swapchain;
 	VkRenderPass renderpass;
 	VkCommandPool commandpool;
@@ -98,6 +101,8 @@ struct VULKAN_HANDLES {
 	int current_image;
 
 	struct VULKAN_PIPELINE mesh;
+
+	int finished_initialising;
 };
 extern struct VULKAN_HANDLES vk;
 

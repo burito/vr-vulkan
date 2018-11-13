@@ -36,7 +36,7 @@ else
 BUILD_DIR = $(WIN_DIR)
 GLSLANG = deps/win/glslangValidator.exe
 WINDRES = windres
-CC = clang -target x86_64-pc-windows-gnu -g
+CC = gcc -g
 default: vulkan.exe
 $(shell	cp deps/win/openvr_api.dll .)
 endif

@@ -192,15 +192,25 @@ static LONG WINAPI wProc(HWND hWndProc, UINT uMsg, WPARAM wParam, LPARAM lParam)
 //	case WM_EXITSIZEMOVE:
 //		printf("WM_EXITSIZEMOVE\n");
 //		return 0;
-
+/*
 	case WM_SIZING:
+		{
+			RECT *rect = lParam;
+			vid_width = rect->right - rect->left;
+			vid_height = rect->bottom - rect->top;
+//			log_warning("resizing=%d: wParam=%d, x=%d, y=%d", win_resizing, wParam, vid_width, vid_height );
+			vulkan_resize();
+		}
+		PostMessage(hWndProc, WM_PAINT, 0, 0);
+		return 0;
+*/
 	case WM_SIZE:
 		vid_width = LOWORD(lParam);
 		vid_height = HIWORD(lParam);
-		if( win_resizing )
+//		if( win_resizing )
 		{
 			if(wParam == 8)return 0;
-			log_warning("resize=%d: wParam=%d, loword=%d, hiword=%d", win_resizing, wParam, LOWORD(lParam), HIWORD(lParam) );
+//			log_warning("resize=%d: wParam=%d, loword=%d, hiword=%d", win_resizing, wParam, LOWORD(lParam), HIWORD(lParam) );
 			vulkan_resize();
 		}
 		PostMessage(hWndProc, WM_PAINT, 0, 0);
@@ -497,7 +507,6 @@ int APIENTRY WinMain(HINSTANCE hCurrentInst, HINSTANCE hPrev,
 	}
 
 	main_end();
-	log_info("Shutdown : Ok");
 	win_end();
 	return 0;
 }

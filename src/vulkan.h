@@ -74,7 +74,7 @@ struct VULKAN_HANDLES {
 	VkInstance instance;
 	VkSurfaceKHR surface;
 	VkDevice device;
-	VkPhysicalDevice *physical_device;
+	VkPhysicalDevice physical_device;
 	VkSurfaceCapabilitiesKHR surface_caps;
 	uint32_t desired_queuefamily;
 	VkSwapchainKHR swapchain;

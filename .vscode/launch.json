@@ -10,6 +10,7 @@
 				"program": "${workspaceFolder}/vulkan",
 				"miDebuggerPath": "/usr/bin/gdb",
 				"MIMode": "gdb",
+				"environment": [{"name":"LD_LIBRARY_PATH", "value":"${workspaceFolder}"}],
 			},
 			"windows": {
 				"program": "${workspaceFolder}/vulkan.exe",

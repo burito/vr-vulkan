@@ -51,16 +51,16 @@ WIN_LIBS = -luser32 -lwinmm -lgdi32 -lXInput -lshell32
 WIN_LIBS += c:/Windows/system32/vulkan-1.dll openvr_api.dll 
 # use this line with clang/msvc
 #WIN_LIBS += -Ldeps/win -lopenvr_api.lib -lvulkan-1
-LIN_LIBS = -Ldeps/lin -lvulkan -lxcb -lm -lopenvr_api
+LIN_LIBS = -Ldeps/lin -lvulkan -lX11 -lm -lopenvr_api -lrt
+#LIN_LIBS = -Ldeps/lin -lvulkan -lxcb -lm -lopenvr_api -lrt
 MAC_LIBS = -Ldeps/mac -lMoltenVK -lopenvr_api -framework CoreVideo -framework QuartzCore -rpath . -framework Cocoa
-# replace -lxcb with -lX11 if using Xlib
 
 WIN_DIR = build/win
 LIN_DIR = build/lin
 MAC_DIR = build/mac
 
 _WIN_OBJS = win32.o win32.res $(OBJS)
-_LIN_OBJS = linux_xcb.o $(OBJS)
+_LIN_OBJS = linux_xlib.o $(OBJS)
 _MAC_OBJS = macos.o $(OBJS)
 
 WIN_OBJS = $(patsubst %,$(WIN_DIR)/%,$(_WIN_OBJS))

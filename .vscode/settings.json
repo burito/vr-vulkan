@@ -17,6 +17,7 @@
 		"string_view": "c",
 		"*.tcc": "cpp",
 		"deque": "cpp",
-		"vector": "cpp"
+		"vector": "cpp",
+		"time.h": "c"
 	}
 }

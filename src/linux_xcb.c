@@ -17,10 +17,11 @@ freely, subject to the following restrictions:
    misrepresented as being the original software.
 3. This notice may not be removed or altered from any source distribution.
 */
+#define _XOPEN_SOURCE 700
+#include <time.h>
 
 #include <stdlib.h>
 #include <xcb/xcb.h>
-#include <sys/time.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -54,13 +55,13 @@ int main_init(int argc, char *argv[]);
 void main_loop(void);
 void main_end(void);
 
-const int sys_ticksecond = 1000000;
-long long sys_time(void)
+const uint64_t sys_ticksecond = 1000000000;
+static uint64_t sys_time_start = 0;
+uint64_t sys_time(void)
 {
-	struct timeval tv;
-	tv.tv_usec = 0;	// tv.tv_sec = 0;
-	gettimeofday(&tv, NULL);
-	return tv.tv_usec + tv.tv_sec * sys_ticksecond;
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+	return (ts.tv_sec * 1000000000 + ts.tv_nsec) - sys_time_start;
 }
 
 void shell_browser(char *url)
@@ -80,6 +81,11 @@ xcb_window_t window;
 
 int main(int argc, char *argv[])
 {
+
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+	sys_time_start = ts.tv_sec * 1000000000 + ts.tv_nsec;
+
 	log_init();
 	log_info("Platform    : XCB");
 	xcb_screen_t *screen;

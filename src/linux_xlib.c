@@ -18,7 +18,13 @@ freely, subject to the following restrictions:
 3. This notice may not be removed or altered from any source distribution.
 */
 
+#define _XOPEN_SOURCE 700
+#include <time.h>
+
 #include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <stdio.h>
 #include <X11/Xlib.h>
 
 #include "log.h"
@@ -26,7 +32,7 @@ freely, subject to the following restrictions:
 //////// Public Interface to the rest of the program
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "keyboard.h"
+//#include "keyboard.h"
 
 int killme = 0;
 int sys_width  = 1980;	/* dimensions of default screen */
@@ -50,14 +56,15 @@ int fullscreen_toggle=0;
 int main_init(int argc, char *argv[]);
 void main_loop(void);
 void main_end(void);
+void vulkan_resize(void);
 
-const int sys_ticksecond = 1000000;
-long long sys_time(void)
+const uint64_t sys_ticksecond = 1000000000;
+static uint64_t sys_time_start = 0;
+uint64_t sys_time(void)
 {
-	struct timeval tv;
-	tv.tv_usec = 0;	// tv.tv_sec = 0;
-	gettimeofday(&tv, NULL);
-	return tv.tv_usec + tv.tv_sec * sys_ticksecond;
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+	return (ts.tv_sec * 1000000000 + ts.tv_nsec) - sys_time_start;
 }
 
 void shell_browser(char *url)
@@ -87,14 +94,14 @@ int main(int argc, char *argv[])
 	int white_pixel = WhitePixel(display, screen);
 	int black_pixel = BlackPixel(display, screen);
 
-	window = XCreateSimpleWindow( display, RootWindow(display, screen), 0, 0, VIDX, VIDY, 0, white_pixel, black_pixel );
+	window = XCreateSimpleWindow( display, RootWindow(display, screen), 0, 0, vid_width, vid_height, 0, white_pixel, black_pixel );
 	log_debug("XCreateSimpleWindow");
 
 	XSetWindowAttributes winAttr;
 	winAttr.override_redirect = 1;
 	XChangeWindowAttributes(display, window, CWOverrideRedirect, &winAttr);
 
-	XWarpPointer(display, None, window, 0, 0, 0, 0, VIDX, 0);
+	XWarpPointer(display, None, window, 0, 0, 0, 0, vid_width, 0);
 	XMapWindow(display, window);
 	XMapRaised(display, window);
 	XFlush(display);

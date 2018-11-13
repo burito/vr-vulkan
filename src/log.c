@@ -17,7 +17,7 @@ freely, subject to the following restrictions:
    misrepresented as being the original software.
 3. This notice may not be removed or altered from any source distribution.
 */
-
+#define _XOPEN_SOURCE 700
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -110,34 +110,25 @@ void log_out(char* file, int line, enum LOG_LEVEL level, char *fmt, ...)
 	int time_str_offset = display_date ? 0 : 11;
 	char time_buf [128];
 	struct timespec tv;
-#ifdef _WIN32
+
 	time_buf[0] = 0;
 	time_str_offset = 0;
 	double now = (double)sys_time() / (double)sys_ticksecond;
 	tv.tv_nsec = fmod( now, 1.0) * 1000000000.0f;
 	tv.tv_sec = (uint64_t)now;
 
-	printf( "%lld.%09ld %s ",
-		tv.tv_sec, tv.tv_nsec,
+	printf( "%ld.%09ld %s ",
+		(uint64_t)tv.tv_sec, tv.tv_nsec,
 		log_label(level) );
 /*
 	clock_gettime(0, &tv); // CLOCK_MONOTONIC?
 	struct tm tm_now;
 	localtime_s( &tm_now, &tv.tv_sec);
 	strftime( time_buf, 128, "%Y-%m-%dT%H:%M:%S", &tm_now);
-*/
-#else
-	clock_gettime(0, &tv); // CLOCK_MONOTONIC?
-	struct tm *tm_now;
-//	localtime_s( &tm_now, &tv.tv_sec);
-	tm_now = localtime(&tv.tv_sec);
-	strftime( time_buf, 128, "%Y-%m-%dT%H:%M:%S", tm_now);
-
 	printf( "%s.%09ld %s ",
 		time_buf + time_str_offset, tv.tv_nsec,
 		log_label(level) );
-#endif
-
+*/
 
 	va_list args;
 	va_start(args, fmt);		

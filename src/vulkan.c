@@ -19,7 +19,7 @@ freely, subject to the following restrictions:
 */
 
 // we don't want XLIB, XCB works better
-// #define USE_LINUX_XLIB
+#define USE_LINUX_XLIB
 
 #ifdef _WIN32
 
@@ -1399,6 +1399,7 @@ int vulkan_loop(float current_time)
 		log_warning("vkAcquireNextImageKHR = %s", vulkan_result(result));
 		switch(result) {
 		case VK_ERROR_OUT_OF_DATE_KHR:
+			return 0;
 		case VK_ERROR_DEVICE_LOST:
 			killme=1;
 			return 1;

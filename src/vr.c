@@ -126,7 +126,7 @@ void device_spam(int id)
 	
 
 
-	log_info("%d:%c:%s:", id, class_letter, device_name);
+//	log_info("%d:%c:%s:", id, class_letter, device_name);
 
 	switch (class)
 	{
@@ -398,7 +398,6 @@ int vr_init(void)
 		vk_framebuffer( m_nRenderWidth, m_nRenderHeight, &left_eye_fb);
 		vk_framebuffer( m_nRenderWidth, m_nRenderHeight, &right_eye_fb);
 	}
-	return 0;
 
 /*
 	if(!eye_prog) eye_prog = shader_load(
@@ -445,10 +444,15 @@ int vr_init(void)
 	}
 */
 	vr_using = 1;
+	return 0;
+
 }
 
 void vr_end(void)
 {
+	vk_framebuffer_end(&left_eye_fb);
+	vk_framebuffer_end(&right_eye_fb);
+	
 	VR_ShutdownInternal();
 	vr_using = 0;
 }
@@ -501,7 +505,7 @@ void vr_loop( void render(mat4x4, mat4x4) )
 	m_iValidPoseCount = 0;
 	m_strPoseClasses[0] = 0;
 
-	log_info("begin device spam");
+//	log_info("begin device spam");
 
 	for(int nDevice = 0; nDevice < 16; nDevice++)
 	if(m_rTrackedDevicePose[nDevice].bPoseIsValid)
@@ -554,7 +558,7 @@ void vr_loop( void render(mat4x4, mat4x4) )
 		m_strPoseClasses[nDevice] += m_rDevClassChar[nDevice];
 	}
 //	log_debug(" - %d, %d", m_iValidPoseCount, controller_id);
-	log_info("end device spam");
+//	log_info("end device spam");
 	if ( m_rTrackedDevicePose[k_unTrackedDeviceIndex_Hmd].bPoseIsValid )
 	{
 		hmdPose = mat4x4_invert(vrdevice_poses[k_unTrackedDeviceIndex_Hmd]);
@@ -565,6 +569,9 @@ void vr_loop( void render(mat4x4, mat4x4) )
 
 	if(controller_left_id != -1)controller_left = vrdevice_poses[controller_left_id];
 	if(controller_right_id != -1)controller_right = vrdevice_poses[controller_right_id];
+
+	render(mat_l, eye_left_proj);
+
 
 #ifdef NOT_NOW
 // Render to the Headset

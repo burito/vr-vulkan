@@ -102,7 +102,6 @@ VkColorSpaceKHR color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
 struct MESH_UNIFORM_BUFFER {
 	mat4x4 projection;
 	mat4x4 modelview;
-	float time;
 };
 
 WF_OBJ * bunny;
@@ -413,7 +412,7 @@ int vk_framebuffer(int x, int y, struct VR_framebuffer *fb)
 	result = vk_imagebuffer(x, y,
 		pixel_format,
 		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-		VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_ASPECT_COLOR_BIT,
 		&fb->color
 	);
@@ -426,7 +425,7 @@ int vk_framebuffer(int x, int y, struct VR_framebuffer *fb)
 	result = vk_imagebuffer(x, y,
 		VK_FORMAT_D32_SFLOAT,
 		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-		VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		VK_IMAGE_LAYOUT_UNDEFINED,
 		VK_IMAGE_ASPECT_DEPTH_BIT,
 		&fb->depth
 	);
@@ -748,7 +747,7 @@ void vk_pipeline(struct VULKAN_PIPELINE *vp, int reinit_pipeline)
 		VK_FALSE,							// VkBool32                                   rasterizerDiscardEnable;
 		VK_POLYGON_MODE_FILL,						// VkPolygonMode                              polygonMode;
 		VK_CULL_MODE_BACK_BIT,						// VkCullModeFlags                            cullMode;
-		VK_FRONT_FACE_COUNTER_CLOCKWISE,				// VkFrontFace                                frontFace;
+		VK_FRONT_FACE_CLOCKWISE,					// VkFrontFace                                frontFace;
 		VK_FALSE,							// VkBool32                                   depthBiasEnable;
 		0.0f,								// float                                      depthBiasConstantFactor;
 		0.0f,								// float                                      depthBiasClamp;
@@ -1460,7 +1459,7 @@ void vulkan_end(void)
 	vkDestroyInstance(vk.instance, NULL);
 }
 
-int vulkan_loop(float current_time)
+int vulkan_loop(mat4x4 modelview, mat4x4 projection)
 {
 	log_trace("frame time = %f", current_time);
 	uint32_t next_image = 0;
@@ -1488,24 +1487,10 @@ int vulkan_loop(float current_time)
 		log_warning("vkMapMemory = %s", vulkan_result(result));
 	}
 
-	mat4x4 proj = mat4x4_identity();
-	proj = mat4x4_perspective(1, 30, 1, (float)vid_height / (float)vid_width);
-//	proj = mat4x4_orthographic(0.1, 30, 1, (float)vid_height / (float)vid_width);
-
-	mat4x4 m = mat4x4_identity();
-
-
-	m = mat4x4_rot_y(current_time);		// rotate the bunny
-	m = mul(m, mat4x4_translate_float(-0.5, -0.5, -0.5)); // around it's own origin
-	m = mul(mat4x4_translate_float( 0, 0, -2), m);	// move it 2 metres infront of the origin
-//	m = mul( mat4x4_rot_z(3.141), m);
-
 	struct MESH_UNIFORM_BUFFER *ubo = data;
 
-	ubo->modelview = m;
-	ubo->projection = proj;
-	ubo->time = current_time;
-
+	ubo->modelview = modelview;
+	ubo->projection = projection;
 	vkUnmapMemory(vk.device, vk.mesh.ubo_host.memory);
 
 	VkPipelineStageFlags vkflags = VK_PIPELINE_STAGE_TRANSFER_BIT;

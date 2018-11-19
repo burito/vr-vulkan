@@ -137,7 +137,7 @@ mat4x4 mat4x4_perspective(float near, float far, float width, float height)
 {
 	mat4x4 ret = {
 		near/(0.5*width), 0, 0, 0,
-		0, near/(-0.5*height), 0, 0,
+		0, near/(0.5*height), 0, 0,
 		0, 0, (-(far+near))/(far-near), (-2*far*near)/(far-near),
 		0, 0, -1, 0  
 	};

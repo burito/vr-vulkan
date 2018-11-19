@@ -27,4 +27,5 @@ void main() {
 
 	outNormal = mat3(ubo.modelview) * inNormal;
 	gl_Position = ubo.projection * ubo.modelview * vec4( inPos, 1.0 );
+//	gl_Position.y = -gl_Position.y;
 }

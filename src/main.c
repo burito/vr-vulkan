@@ -34,14 +34,14 @@ freely, subject to the following restrictions:
 #include "vr.h"
 
 int vulkan_init(void);
-int vulkan_loop(float current_time);
+int vulkan_loop(mat4x4 modelview, mat4x4 projection);
 void vulkan_end(void);
 
 long long time_start = 0;
 
 float step = 0.0f;
 
-
+float current_time = 0.0f;
 
 /*
 WF_OBJ * bunny;
@@ -56,23 +56,12 @@ int main_init(int argc, char *argv[])
 	
 	time_start = sys_time();
 
-
-//	glEnable(GL_DEPTH_TEST);
-//	glDepthFunc(GL_LESS);
-//	glDepthRangef( 0.1f, 30.0f);
-
-/*
-	shader = shader_load(
-		"data/shaders/vertex.shader",
-		"data/shaders/fragment.shader" );
-	shader_uniform(shader, "world");
-	shader_uniform(shader, "camera");
-*/
 	if( vulkan_init() )
 	{
 		log_fatal("Vulkan Init: FAILED");
 		return 1;
 	}
+	
 //	vr_init();
 
 
@@ -83,36 +72,29 @@ int main_init(int argc, char *argv[])
 
 void main_end(void)
 {
+	if(vr_using)
+	{
+		vr_end();
+	}
 	vulkan_end();
 	log_info("Shutdown    : OK");
 }
 
 
-void render(mat4x4 pos, mat4x4 proj)
+void render(mat4x4 view, mat4x4 projection)
 {
-	log_debug("render()");
-/*
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glUseProgram(shader->prog);
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
-	glDepthRangef( 0.1f, 30.0f);
+//	log_debug("render()");
 
-	mat4x4 m;
-	m = mat4x4_rot_y(step);		// rotate the bunny
-	m = mul(m, mat4x4_translate_float(-0.5, 0, -0.5)); // around it's own origin
-	m = mul(mat4x4_translate_float( 0, 0, -2), m);	// move it 2 metres infront of the origin
-//	m = mul( pos, m);
-	mat4x4 c = mul(proj, pos);
 
-//	log_trace("render");
-//	mat4x4_print(pos);
+	mat4x4 model = mat4x4_identity();
+	model = mul( model, mat4x4_rot_y(current_time) );		// rotate the bunny
+	model = mul( model, mat4x4_translate_float(-0.5, -0.5, -0.5) ); // around it's own origin
+	model = mul( mat4x4_translate_float( 0, 0, -2), model );	// move it 2 metres infront of the origin
 
-	glUniformMatrix4fv(shader->unif[0], 1, GL_FALSE, m.f);
-	glUniformMatrix4fv(shader->unif[1], 1, GL_FALSE, c.f);
-	bunny->draw(bunny);
-	glUseProgram(0);
-*/
+	mat4x4 modelview = mul( view, model );
+
+
+	vulkan_loop(modelview, projection);
 
 }
 
@@ -123,24 +105,7 @@ void main_loop(void)
 		step -= 2*M_PI;
 	else
 		step += 0.01;
-/*
-	glClearColor(0.3f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-	glClearColor(0.2f, 0.2f, 0.3f, 1.0f);
 
-	if(!vr_using)
-	{
-		mat4x4 proj = mat4x4_identity();
-		proj = mat4x4_perspective(1, 30, 1, (float)vid_height / (float)vid_width);
-//		proj = mat4x4_orthographic(0.1, 30, 1, (float)vid_height / (float)vid_width);
-		mat4x4 camera = mat4x4_translate_float(0, 0, 0); // move the camera 1m above ground
-		render(camera, proj);
-	}
-	else
-	{
-		vr_loop(render);
-	}
-*/
 
 	if(keys[KEY_ESCAPE])
 	{
@@ -165,8 +130,20 @@ void main_loop(void)
 		else vr_end();
 	}
 
-	if( vulkan_loop( (sys_time() - time_start) / (float)sys_ticksecond ) )
-		killme = 1;
+	current_time = (sys_time() - time_start) / (float)sys_ticksecond;
+
+	if(!vr_using)
+	{
+		mat4x4 projection = mat4x4_identity();
+		projection = mat4x4_perspective(1, 30, 1, (float)vid_height / (float)vid_width);
+//		projection = mat4x4_orthographic(0.1, 30, 1, (float)vid_height / (float)vid_width);
+		mat4x4 modelview = mat4x4_translate_float(0, 0, 0); // move the camera 1m above ground
+		render(modelview, projection);
+	}
+	else
+	{
+		vr_loop(render);
+	}
 
 }
 

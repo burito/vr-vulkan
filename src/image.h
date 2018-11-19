@@ -24,13 +24,16 @@ freely, subject to the following restrictions:
 #ifndef __IMG_H__
 #define __IMG_H__
 
+#include "vulkan.h"
+
 typedef struct IMG
 {
 	int x, y;
 	int bpp;
 	int channels;
+	int mips;
+	struct VULKAN_TEXTURE vk;
 	unsigned char *buf;
-//	GLuint id;
 	char *name;
 } IMG;
 

@@ -182,6 +182,9 @@ VkResult vk_surface(void)
 
 VkResult vk_buffer(VkBufferUsageFlags usage, VkMemoryPropertyFlags flags, struct VULKAN_BUFFER *x, VkDeviceSize size, void *data)
 {
+
+	log_debug("vk_buffer( %d )", (int)size);
+
 	VkResult result;
 	VkBufferCreateInfo buffer_crinf = {
 		VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,	// VkStructureType        sType;
@@ -605,21 +608,30 @@ void vk_pipeline(struct VULKAN_PIPELINE *vp, int reinit_pipeline)
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			&vp->ubo_device, vp->ubo_host.size, NULL );
 
-		VkDescriptorSetLayoutBinding descriptor_layout_binding = {
-			0,					// uint32_t              binding;
-			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,	// VkDescriptorType      descriptorType;
-			1,					// uint32_t              descriptorCount;
-			VK_SHADER_STAGE_VERTEX_BIT |		// VkShaderStageFlags    stageFlags;
-			VK_SHADER_STAGE_FRAGMENT_BIT,
-			NULL					// const VkSampler*      pImmutableSamplers;
+		VkDescriptorSetLayoutBinding descriptor_layout_binding[] = {
+			{
+				0,					// uint32_t              binding;
+				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,	// VkDescriptorType      descriptorType;
+				1,					// uint32_t              descriptorCount;
+				VK_SHADER_STAGE_VERTEX_BIT |		// VkShaderStageFlags    stageFlags;
+				VK_SHADER_STAGE_FRAGMENT_BIT,
+				NULL					// const VkSampler*      pImmutableSamplers;
+			},
+			{
+				1,						// uint32_t              binding;
+				VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	// VkDescriptorType      descriptorType;
+				1,						// uint32_t              descriptorCount;
+				VK_SHADER_STAGE_FRAGMENT_BIT,			// VkShaderStageFlags    stageFlags;
+				&vk.sampler					// const VkSampler*      pImmutableSamplers;
+			}
 		};
 
 		VkDescriptorSetLayoutCreateInfo descriptor_layout_crinf = {
 			VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,	// VkStructureType                        sType;
 			NULL,							// const void*                            pNext;
 			0,							// VkDescriptorSetLayoutCreateFlags       flags;
-			1,							// uint32_t                               bindingCount;
-			&descriptor_layout_binding				// const VkDescriptorSetLayoutBinding*    pBindings;
+			2,							// uint32_t                               bindingCount;
+			descriptor_layout_binding				// const VkDescriptorSetLayoutBinding*    pBindings;
 		};
 
 		result = vkCreateDescriptorSetLayout(vk.device, &descriptor_layout_crinf, NULL, &vp->descriptor_set_layout);
@@ -648,19 +660,39 @@ void vk_pipeline(struct VULKAN_PIPELINE *vp, int reinit_pipeline)
 			0,			// VkDeviceSize    offset;
 			vp->ubo_size		// VkDeviceSize    range;
 		};
-		VkWriteDescriptorSet desc_write_set = {
-			VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,	// VkStructureType                  sType;
-			NULL,					// const void*                      pNext;
-			vp->descriptor_set,			// VkDescriptorSet                  dstSet;
-			0,					// uint32_t                         dstBinding;
-			0,					// uint32_t                         dstArrayElement;
-			1,					// uint32_t                         descriptorCount;
-			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,	// VkDescriptorType                 descriptorType;
-			NULL,					// const VkDescriptorImageInfo*     pImageInfo;
-			&desc_buf_info,				// const VkDescriptorBufferInfo*    pBufferInfo;
-			NULL					// const VkBufferView*              pTexelBufferView;
+		VkDescriptorImageInfo desc_img_info = {
+			bunny->m[0].map_Kd->vk.sampler,		// VkSampler        sampler;
+			bunny->m[0].map_Kd->vk.imageview,	// VkImageView      imageView;
+			bunny->m[0].map_Kd->vk.image_layout	// VkImageLayout    imageLayout;
 		};
-		vkUpdateDescriptorSets(vk.device, 1, &desc_write_set, 0, NULL);
+
+		VkWriteDescriptorSet desc_write_set[] = {
+			{
+				VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,	// VkStructureType                  sType;
+				NULL,					// const void*                      pNext;
+				vp->descriptor_set,			// VkDescriptorSet                  dstSet;
+				0,					// uint32_t                         dstBinding;
+				0,					// uint32_t                         dstArrayElement;
+				1,					// uint32_t                         descriptorCount;
+				VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,	// VkDescriptorType                 descriptorType;
+				NULL,					// const VkDescriptorImageInfo*     pImageInfo;
+				&desc_buf_info,				// const VkDescriptorBufferInfo*    pBufferInfo;
+				NULL					// const VkBufferView*              pTexelBufferView;
+			},
+			{
+				VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,		// VkStructureType                  sType;
+				NULL,						// const void*                      pNext;
+				vp->descriptor_set,				// VkDescriptorSet                  dstSet;
+				1,						// uint32_t                         dstBinding;
+				0,						// uint32_t                         dstArrayElement;
+				1,						// uint32_t                         descriptorCount;
+				VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	// VkDescriptorType                 descriptorType;
+				&desc_img_info,					// const VkDescriptorImageInfo*     pImageInfo;
+				NULL,						// const VkDescriptorBufferInfo*    pBufferInfo;
+				NULL						// const VkBufferView*              pTexelBufferView;
+			},
+		};
+		vkUpdateDescriptorSets(vk.device, 2, desc_write_set, 0, NULL);
 	//	log_debug("vkUpdateDescriptorSets");
 	}
 // create the pipeline
@@ -1224,9 +1256,14 @@ int vulkan_init(void)
 	}
 
 	// Create the Descriptor Pool
-	VkDescriptorPoolSize desc_pool_size = {
-		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,	// VkDescriptorType    type;
-		2					// uint32_t            descriptorCount;
+	VkDescriptorPoolSize desc_pool_size[]  = {
+		{
+			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,	// VkDescriptorType    type;
+			2					// uint32_t            descriptorCount;
+		}, {
+			VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	// VkDescriptorType    type;
+			1						// uint32_t            descriptorCount;
+		}
 	};
 
 	VkDescriptorPoolCreateInfo desc_pool_crinf = {
@@ -1234,8 +1271,8 @@ int vulkan_init(void)
 		NULL,						// const void*                    pNext;
 		0,						// VkDescriptorPoolCreateFlags    flags;
 		2,						// uint32_t                       maxSets;
-		1,						// uint32_t                       poolSizeCount;
-		&desc_pool_size					// const VkDescriptorPoolSize*    pPoolSizes;
+		2,						// uint32_t                       poolSizeCount;
+		desc_pool_size					// const VkDescriptorPoolSize*    pPoolSizes;
 	};
 
 	result = vkCreateDescriptorPool(vk.device, &desc_pool_crinf, NULL, &vk.descriptor_pool);
@@ -1259,6 +1296,35 @@ int vulkan_init(void)
 		log_fatal("vkCreateCommandPool = %s", vulkan_result(result));
 		goto VK_INIT_COMMAND_POOL;
 	}
+
+	VkSamplerCreateInfo sampler_crinf = {
+		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,	// VkStructureType         sType;
+		NULL,					// const void*             pNext;
+		0,					// VkSamplerCreateFlags    flags;
+		VK_FILTER_LINEAR,			// VkFilter                magFilter;
+		VK_FILTER_LINEAR,			// VkFilter                minFilter;
+		VK_SAMPLER_MIPMAP_MODE_NEAREST,		// VkSamplerMipmapMode     mipmapMode;
+		VK_SAMPLER_ADDRESS_MODE_REPEAT,		// VkSamplerAddressMode    addressModeU;
+		VK_SAMPLER_ADDRESS_MODE_REPEAT,		// VkSamplerAddressMode    addressModeV;
+		VK_SAMPLER_ADDRESS_MODE_REPEAT,		// VkSamplerAddressMode    addressModeW;
+		0.0f,					// float                   mipLodBias;
+		VK_FALSE,				// VkBool32                anisotropyEnable;
+		1.0f,					// float                   maxAnisotropy;
+		VK_FALSE,				// VkBool32                compareEnable;
+		VK_COMPARE_OP_NEVER,			// VkCompareOp             compareOp;
+		0.0f,					// float                   minLod;
+		0.0f,					// float                   maxLod;
+		VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,	// VkBorderColor           borderColor;
+		VK_FALSE				// VkBool32                unnormalizedCoordinates;
+	};
+
+	result = vkCreateSampler(vk.device, &sampler_crinf, NULL, &vk.sampler);
+	if( result != VK_SUCCESS )
+	{
+		log_fatal("vkCreateSampler = %s", vulkan_result(result));
+		goto VK_INIT_SAMPLER;
+	}
+
 
 	// create the swapchain framebuffers
 	// TODO
@@ -1301,13 +1367,17 @@ int vulkan_init(void)
 		allocated_semaphores++;
 	}
 
+
 //	log_debug("this one");
+
+
+
+//	bunny = wf_load("data/stanford-bunny.obj");
+	bunny = wf_load("data/head.obj");
 
 	vk_pipeline_mesh(0);
 	vk_swapchain_init();
 
-
-	bunny = wf_load("data/stanford-bunny.obj");
 	vk_commandbuffers();
 
 
@@ -1330,6 +1400,8 @@ VK_INIT_SEMAPHORES:
 
 VK_INIT_SWAPCHAIN_IMAGES:
 VK_INIT_ALLOC_COMMAND_BUFFERS:
+	vkDestroySampler(vk.device, vk.sampler, NULL);
+VK_INIT_SAMPLER:
 	vkDestroyCommandPool(vk.device, vk.commandpool, NULL);
 VK_INIT_COMMAND_POOL:
 VK_INIT_MALLOC_SWAPCHAIN:
@@ -1368,7 +1440,6 @@ void vulkan_end(void)
 	wf_free(bunny);
 	vk_swapchain_end();
 
-
 	for(int i=0; i<vk.display_buffer_count; i++)
 	{
 		vkDestroySemaphore(vk.device, vk.sc_semaphore[i], NULL);
@@ -1380,6 +1451,7 @@ void vulkan_end(void)
 	free(vk.sc_commandbuffer);
 	free(vk.sc_image);
 
+	vkDestroySampler(vk.device, vk.sampler, NULL);
 	vkDestroyCommandPool(vk.device, vk.commandpool, NULL);
 	vkDestroyDescriptorPool(vk.device, vk.descriptor_pool, NULL);
 	vkDestroyRenderPass(vk.device, vk.renderpass, NULL);

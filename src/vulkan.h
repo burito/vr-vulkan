@@ -33,6 +33,14 @@ struct VULKAN_IMAGEBUFFER {
 	VkImageView imageview;
 };
 
+struct VULKAN_TEXTURE {
+	VkImage image;
+	VkDeviceMemory memory;
+	VkImageView imageview;
+	VkSampler sampler;
+	VkImageLayout image_layout;
+};
+
 struct VR_framebuffer {
 	struct VULKAN_IMAGEBUFFER color;
 	struct VULKAN_IMAGEBUFFER depth;
@@ -83,6 +91,7 @@ struct VULKAN_HANDLES {
 	VkPipeline pipeline;
 	VkPipelineLayout pipeline_layout;
 	VkQueue queue;
+	VkSampler sampler;
 
 	VkPhysicalDeviceMemoryProperties device_mem_props;
 	VkPhysicalDeviceProperties device_properties;
@@ -105,6 +114,9 @@ struct VULKAN_HANDLES {
 	int finished_initialising;
 };
 extern struct VULKAN_HANDLES vk;
+
+int find_memory_type(VkMemoryRequirements requirements, VkMemoryPropertyFlags wanted);
+
 
 int vk_framebuffer(int x, int y, struct VR_framebuffer *fb);
 void vk_framebuffer_end(struct VR_framebuffer *fb);

@@ -117,7 +117,11 @@ void log_out(char* file, int line, enum LOG_LEVEL level, char *fmt, ...)
 	tv.tv_nsec = fmod( now, 1.0) * 1000000000.0f;
 	tv.tv_sec = (uint64_t)now;
 
+#ifdef __APPLE__
+	printf( "%lld.%09ld %s ",
+#else
 	printf( "%ld.%09ld %s ",
+#endif
 		(uint64_t)tv.tv_sec, tv.tv_nsec,
 		log_label(level) );
 /*

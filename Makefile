@@ -78,7 +78,7 @@ $(LIN_DIR)/%.o: %.c
 $(MAC_DIR)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(MAC_DIR)/macos.o: macos.m
+$(MAC_DIR)/%.o: %.m
 	$(CC) $(CFLAGS) -c $< -o $@
 
 libMoltenVK.dylib: deps/mac/libMoltenVK.dylib

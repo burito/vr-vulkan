@@ -410,11 +410,11 @@ static void x11_window(void)
 		DefaultDepth(display, screen), InputOutput, DefaultVisual(display, screen),
 		CWBorderPixel | CWColormap | CWEventMask | CWOverrideRedirect,
 		&xwin_attr);
-	// Set the icon
+/*	// Set the icon
 	Atom net_wm_icon = XInternAtom(display, "_NET_WM_ICON", False);
 	Atom cardinal = XInternAtom(display, "CARDINAL", False);
 	int icon_length = 2 + 256 * 256;
-/*
+
 	XChangeProperty(display, window, net_wm_icon, cardinal, 32,
 		PropModeReplace, icon_buffer, icon_length);
 */

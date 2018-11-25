@@ -132,11 +132,6 @@ static void img_vulkan_init(IMG *img)
 //		goto TODO_ERROR_HANDLING;
 	}
 
-
-	VkImageSubresourceRange image_subresource_range = {
-
-	};
-
 	VkImageMemoryBarrier buffer_copy_barrier = {
 		VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,		// VkStructureType            sType;
 		NULL,						// const void*                pNext;

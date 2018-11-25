@@ -58,14 +58,6 @@ int VR_IsRuntimeInstalled();
 const char * VR_GetVRInitErrorAsSymbol( EVRInitError error );
 const char * VR_GetVRInitErrorAsEnglishDescription( EVRInitError error );
 
-static void sleep(unsigned int msec)
-{
-#ifdef _WIN32
-	Sleep(msec);
-#else
-	usleep(msec*1000);
-#endif
-}
 
 struct VR_IVRSystem_FnTable * OVR = NULL;
 struct VR_IVRCompositor_FnTable * OVRC;
@@ -170,7 +162,7 @@ void device_spam(int id)
 void ovr_model_load( TrackedDeviceIndex_t di )
 {
 	ETrackedPropertyError tp_error;
-	EVRRenderModelError rm_error;
+//	EVRRenderModelError rm_error;
 
 	// we only want controller models
 	if(OVR->GetTrackedDeviceClass(di) != ETrackedDeviceClass_TrackedDeviceClass_Controller)return;
@@ -313,7 +305,7 @@ int vr_init(void)
 		return 1;
 	}
 	
-	uint32_t vrToken = VR_InitInternal(&eError, EVRApplicationType_VRApplication_Scene);
+	VR_InitInternal(&eError, EVRApplicationType_VRApplication_Scene);
 	if (eError != EVRInitError_VRInitError_None)
 	{
 		log_fatal("VR_InitInternal: %s", VR_GetVRInitErrorAsSymbol(eError));

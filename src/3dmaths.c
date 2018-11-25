@@ -62,96 +62,96 @@ mat4x4 mat4x4_invert(mat4x4 m)
 
 mat4x4 mat4x4_transpose(mat4x4 m)
 {
-	mat4x4 x = {
+	mat4x4 x = { .f={
 	m.m[0][0], m.m[1][0], m.m[2][0], m.m[3][0],
 	m.m[0][1], m.m[1][1], m.m[2][1], m.m[3][1],
 	m.m[0][2], m.m[1][2], m.m[2][2], m.m[3][2],
 	m.m[0][3], m.m[1][3], m.m[2][3], m.m[3][3]
-	};
+	}};
 	return x;
-};
+}
 
 mat4x4 mat4x4_identity(void)
 {
-	mat4x4 a = {
+	mat4x4 a = { .f={
 		1, 0, 0, 0,
 		0, 1, 0, 0,
 		0, 0, 1, 0,
 		0, 0, 0, 1
-	};
+	}};
 	return a;
 }
 
 mat4x4 mat4x4_rot_x(float t)
 {
-	mat4x4 a = {
+	mat4x4 a = { .f={
 		1,       0,      0, 0,
 		0,  cos(t), sin(t), 0,
 		0, -sin(t), cos(t), 0,
 		0,       0,      0, 1
-	};
+	}};
 	return a;
 }
 
 mat4x4 mat4x4_rot_y(float t)
 {
-	mat4x4 a = {
+	mat4x4 a = { .f={
 		cos(t), 0, -sin(t), 0,
 		     0, 1,       0, 0,
 		sin(t), 0,  cos(t), 0,
 		     0, 0,       0, 1
-	};
+	}};
 	return a;
 }
 
 mat4x4 mat4x4_rot_z(float t)
 {
-	mat4x4 a = {
+	mat4x4 a = { .f={
 		 cos(t), sin(t), 0, 0,
 		-sin(t), cos(t), 0, 0,
 		      0,      0, 1, 0,
 		      0,      0, 0, 1
-	};
+	}};
 	return a;
 }
 
 mat4x4 mat4x4_translate_vect(vect v)
 {
-	mat4x4 a = {
+	mat4x4 a = { .f={
 		1, 0, 0, 0,
 		0, 1, 0, 0,
 		0, 0, 1, 0,
 		v.x, v.y, v.z, 1
-	};
+	}};
 	return a;
 }
 
 mat4x4 mat4x4_translate_float(float x, float y, float z)
 {
-	vect a = {x, y, z};
+	vect a = { .f={ x, y, z}};
 	return mat4x4_translate_vect(a);
 }
 
 // http://www.songho.ca/opengl/gl_projectionmatrix.html#perspective
 mat4x4 mat4x4_perspective(float near, float far, float width, float height)
 {
-	mat4x4 ret = {
+	mat4x4 ret = { .f={
 		near/(0.5*width), 0, 0, 0,
 		0, near/(0.5*height), 0, 0,
 		0, 0, (-(far+near))/(far-near), (-2*far*near)/(far-near),
 		0, 0, -1, 0  
-	};
+	}};
 	return ret;
 }
 // http://www.songho.ca/opengl/gl_projectionmatrix.html#ortho
 mat4x4 mat4x4_orthographic(float near, float far, float width, float height)
 {
-	mat4x4 ret = {
+	mat4x4 ret = { .f={
 		1/(0.5*width), 0, 0, 0,
 		0, 1/(0.5*height), 0, 0,
 		0, 0, (-2)/(far-near), -((far*near)/(far-near)),
 		0, 0, 0, 1  
-	};
+	}};
 	return ret;
 }
 
@@ -207,12 +207,12 @@ _Generic() macro's mul(), add() and sub()
 
 mat4x4 mat4x4_mov_HmdMatrix34(HmdMatrix34_t x)
 {
-	mat4x4 r = {
+	mat4x4 r = { .f={
 		x.m[0][0], x.m[1][0], x.m[2][0], 0.0f,	
 		x.m[0][1], x.m[1][1], x.m[2][1], 0.0f,	
 		x.m[0][2], x.m[1][2], x.m[2][2], 0.0f,	
 		x.m[0][3], x.m[1][3], x.m[2][3], 1.0f,	
-	};
+	}};
 	return r;
 }
 
@@ -298,31 +298,31 @@ vect vect_div_vect(vect l, vect r)
 
 vect vect_add_vect(vect l, vect r)
 {
-	vect x = { l.x + r.x, l.y + r.y, l.z + r.z };
+	vect x = { .f={ l.x + r.x, l.y + r.y, l.z + r.z }};
 	return x;
 }
 
 vect vect_add_float(vect l, float r)
 {
-	vect x = { l.x + r, l.y + r, l.z + r };
+	vect x = { .f={ l.x + r, l.y + r, l.z + r }};
 	return x;
 }
 
 vect vect_sub_vect(vect l, vect r)
 {
-	vect x = { l.x - r.x, l.y - r.y, l.z - r.z };
+	vect x = { .f={ l.x - r.x, l.y - r.y, l.z - r.z }};
 	return x;
 }
 
 vect vect_mul_float(vect l, float r)
 {
-	vect a = {l.x*r, l.y*r, l.z*r};
+	vect a = { .f={ l.x*r, l.y*r, l.z*r}};
 	return a;
 }
 
 vect vect_div_float(vect l, float r)
 {
-	vect a = {l.x/r, l.y/r, l.z/r};
+	vect a = { .f={ l.x/r, l.y/r, l.z/r}};
 	return a;
 }
 
@@ -369,7 +369,7 @@ float float_div_float(float l, float r)
 
 vect float_sub_vect(float l, vect r)
 {
-	vect x = { l - r.x, l - r.y, l - r.z};
+	vect x = { .x = l - r.x, .y = l - r.y, .z = l - r.z};
 	return x;
 }
 

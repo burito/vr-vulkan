@@ -894,6 +894,12 @@ int vulkan_init(void)
 
 	VkPhysicalDevice *vkpd = NULL;
 	vkpd = malloc(sizeof(VkPhysicalDevice) * device_count);
+	if( vkpd == NULL)
+	{
+		log_fatal("malloc(vkpd)");
+		goto VK_INIT_ENUMERATE;
+	}
+
 	result = vkEnumeratePhysicalDevices(vk.instance, &device_count, vkpd);
 	if( result != VK_SUCCESS )
 	{
@@ -1343,7 +1349,6 @@ VK_INIT_SEMAPHORES:
 	free(vk.sc_commandbuffer);
 	free(vk.sc_image);
 
-VK_INIT_SWAPCHAIN_IMAGES:
 VK_INIT_ALLOC_COMMAND_BUFFERS:
 	vkDestroySampler(vk.device, vk.sampler, NULL);
 VK_INIT_SAMPLER:
@@ -1355,10 +1360,8 @@ VK_INIT_DESCRIPTOR_POOL:
 	vkDestroyRenderPass(vk.device, vk.renderpass, NULL);
 VK_INIT_RENDERPASS:
 	vkDestroySwapchainKHR(vk.device, vk.swapchain, NULL);
-VK_INIT_SWAPCHAIN:
 VK_INIT_PRESENTMODES:
 VK_INIT_SURFACEFORMATS:
-VK_INIT_SURFACESUPPORT:
 VK_INIT_CREATESURFACE:
 	vkDestroyDevice(vk.device, NULL);
 VK_INIT_CREATEDEVICE:
@@ -1720,7 +1723,10 @@ void vk_commandbuffers(void)
 			image_subresource_range				// VkImageSubresourceRange    subresourceRange;
 		};
 
-		VkClearValue clear_color[] = { { 0.2f, 0.0f, 0.0f, 1.0f }, { 1000.0f, 0.0f, 0.0f, 0.0f } };
+		VkClearValue clear_color[] = {
+			{ .color.float32 = { 0.2f, 0.0f, 0.0f, 1.0f} },
+			{ .depthStencil.depth = 1000.0f }
+		};
 		VkRenderPassBeginInfo render_pass_begin_info = {
 			VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType        sType;
 			NULL,						// const void*            pNext;
@@ -2169,7 +2175,6 @@ void vulkan_vr_init(void)
 
 void vk_commandbuffers_vr(struct VULKAN_FRAMEBUFFER *fb)
 {
-	VkResult result;
 	VkImageSubresourceRange image_subresource_range = {
 		VK_IMAGE_ASPECT_COLOR_BIT,	// VkImageAspectFlags    aspectMask;
 		0,				// uint32_t              baseMipLevel;
@@ -2191,7 +2196,11 @@ void vk_commandbuffers_vr(struct VULKAN_FRAMEBUFFER *fb)
 		image_subresource_range				// VkImageSubresourceRange    subresourceRange;
 	};
 
-	VkClearValue clear_color[] = { { 0.2f, 0.0f, 0.0f, 1.0f }, { 1000.0f, 0.0f, 0.0f, 0.0f } };
+	VkClearValue clear_color[] = {
+		{ .color.float32 = { 0.2f, 0.0f, 0.0f, 1.0f} },
+		{ .depthStencil.depth = 1000.0f }
+	};
+	
 	VkRenderPassBeginInfo render_pass_begin_info = {
 		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType        sType;
 		NULL,						// const void*            pNext;

@@ -21,6 +21,7 @@ freely, subject to the following restrictions:
    distribution.
 */
 
+#include <stdlib.h>
 #include <openvr_capi.h>
 
 char* vrc_error(EVRCompositorError x)

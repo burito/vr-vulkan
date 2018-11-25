@@ -3,9 +3,7 @@
 #import <QuartzCore/CAMetalLayer.h>
 
 #include <sys/time.h>
-
 #include <MoltenVK/mvk_vulkan.h>
-
 #include "log.h"
 ///////////////////////////////////////////////////////////////////////////////
 //////// Public Interface to the rest of the program

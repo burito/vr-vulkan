@@ -20,13 +20,14 @@ freely, subject to the following restrictions:
    3. This notice may not be removed or altered from any source
    distribution.
 */
+#include <string.h>
+#include <stdlib.h>
 
 #include <vulkan/vulkan.h>
+
 #include "vulkan.h"
 #include "vulkan_helper.h"
 
-#include <string.h>
-#include <stdlib.h>
 
 #include "stb_image.h"
 

@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2017 Daniel Burke
+Copyright (c) 2018 Daniel Burke
 
 This software is provided 'as-is', without any express or implied
 warranty. In no event will the authors be held liable for any damages
@@ -21,8 +21,6 @@ freely, subject to the following restrictions:
    distribution.
 */
 
-extern int vr_using;
+#include <openvr_capi.h>
 
-void vr_init(void);
-void vr_end(void);
-void vr_loop( void );
+char* vrc_error(EVRCompositorError x);

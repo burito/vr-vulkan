@@ -26,6 +26,8 @@ freely, subject to the following restrictions:
 
 #include <vulkan/vulkan.h>
 
+#include "vulkan.h"
+
 #include "log.h"
 #include "main.h"
 #include "text.h"
@@ -33,13 +35,8 @@ freely, subject to the following restrictions:
 #include "mesh.h"
 #include "vr.h"
 
-int vulkan_init(void);
-int vulkan_loop(mat4x4 modelview, mat4x4 projection);
-void vulkan_end(void);
 
 long long time_start = 0;
-
-float step = 0.0f;
 
 float current_time = 0.0f;
 
@@ -81,32 +78,20 @@ void main_end(void)
 }
 
 
-void render(mat4x4 view, mat4x4 projection)
+void render(mat4x4 view, mat4x4 projection, struct MESH_UNIFORM_BUFFER *dest)
 {
-//	log_debug("render()");
-
-
 	mat4x4 model = mat4x4_identity();
 	model = mul( model, mat4x4_rot_y(current_time) );		// rotate the bunny
 	model = mul( model, mat4x4_translate_float(-0.5, -0.5, -0.5) ); // around it's own origin
 	model = mul( mat4x4_translate_float( 0, 0, -2), model );	// move it 2 metres infront of the origin
 
-	mat4x4 modelview = mul( view, model );
-
-
-	vulkan_loop(modelview, projection);
-
+	dest->modelview = mul( view, model );
+	dest->projection = projection;
 }
 
 
 void main_loop(void)
 {
-	if(step > 2*M_PI)
-		step -= 2*M_PI;
-	else
-		step += 0.01;
-
-
 	if(keys[KEY_ESCAPE])
 	{
 		log_info("Shutdown on : Button press (ESC)");
@@ -132,17 +117,18 @@ void main_loop(void)
 
 	current_time = (sys_time() - time_start) / (float)sys_ticksecond;
 
-	if(!vr_using)
+//	if(!vr_using)
 	{
 		mat4x4 projection = mat4x4_identity();
 		projection = mat4x4_perspective(1, 30, 1, (float)vid_height / (float)vid_width);
 //		projection = mat4x4_orthographic(0.1, 30, 1, (float)vid_height / (float)vid_width);
 		mat4x4 modelview = mat4x4_translate_float(0, 0, 0); // move the camera 1m above ground
-		render(modelview, projection);
+		render(modelview, projection, &ubo_eye_left);
+		vulkan_loop();
 	}
-	else
+	if(vr_using)
 	{
-		vr_loop(render);
+		vr_loop();
 	}
 
 }

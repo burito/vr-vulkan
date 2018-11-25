@@ -42,7 +42,7 @@ $(shell	cp deps/win/openvr_api.dll .)
 endif
 endif
 
-OBJS = main.o log.o vr.o vulkan.o vulkan_helper.o version.o 3dmaths.o text.o mesh.o image.o stb_image.o fast_atof.o
+OBJS = main.o log.o vr.o vr_helper.o vulkan.o vulkan_helper.o version.o 3dmaths.o text.o mesh.o image.o stb_image.o fast_atof.o
 CFLAGS = -std=c11 -Ideps/include -Ibuild -Wno-deprecated-declarations
 VPATH = src build deps
 

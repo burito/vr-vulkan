@@ -23,6 +23,7 @@ freely, subject to the following restrictions:
 #include <vulkan/vulkan.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <openvr_capi.h>
 
@@ -36,11 +37,16 @@ void Sleep (int dwMilliseconds);
 int	usleep(unsigned int useconds);
 #endif
 
+#include "vr_helper.h"
 
 #include "3dmaths.h"
 #include "main.h"
 #include "log.h"
 #include "vulkan.h"
+#include "vulkan_helper.h"
+
+void render(mat4x4 view, mat4x4 projection, struct MESH_UNIFORM_BUFFER *dest);
+
 
 int vr_using = 0;
 
@@ -66,9 +72,6 @@ struct VR_IVRCompositor_FnTable * OVRC;
 struct VR_IVRRenderModels_FnTable * OVRM;
 // k_unMaxTrackedDeviceCount = 16 // gcc doesn't like the way this is declared
 TrackedDevicePose_t m_rTrackedDevicePose [16];
-
-struct VR_framebuffer left_eye_fb;
-struct VR_framebuffer right_eye_fb;
 
 uint32_t m_nRenderWidth;
 uint32_t m_nRenderHeight;
@@ -281,40 +284,6 @@ void ovr_model_load( TrackedDeviceIndex_t di )
 #endif
 }
 
-void ovr_draw(int i)
-{
-/*	glBindVertexArray( ovr_models[i].va );
-	glActiveTexture( GL_TEXTURE0 );
-	glBindTexture( GL_TEXTURE_2D, ovr_models[i].tex );
-	glDrawElements( GL_TRIANGLES, ovr_models[i].vcount, GL_UNSIGNED_SHORT, 0 );
-	glBindVertexArray( 0 );
-	glBindTexture( GL_TEXTURE_2D, 0 );
-*/
-}
-
-void ovr_render(mat4x4 pos, mat4x4 proj)
-{
-/*
-	mat4x4 w = mul(proj,pos );
-	glUseProgram(shader->prog);
-	glUniformMatrix4fv(shader->unif[1], 1, GL_FALSE, w.f);
-
-	if(controller_left_id != -1)
-	{
-		glUniformMatrix4fv(shader->unif[0], 1, GL_FALSE, controller_left.f);
-		ovr_draw(0);
-	}
-	if(controller_right_id != -1)
-	{
-		glUniformMatrix4fv(shader->unif[0], 1, GL_FALSE, controller_right.f);
-		ovr_draw(0);
-	}
-
-	glUseProgram(0);
-	*/
-}
-
-
 
 void hmd_eye_calc(EVREye eye, mat4x4 * dest_pose, mat4x4 *dest_proj)
 {
@@ -377,6 +346,24 @@ int vr_init(void)
 		return 2;
 	}
 
+	uint32_t buffer_size = OVRC->GetVulkanInstanceExtensionsRequired( NULL, 0 );
+	if(buffer_size > 0)
+	{
+		char *buffer = malloc(buffer_size);
+		OVRC->GetVulkanInstanceExtensionsRequired( buffer, buffer_size );
+		log_info("GetVulkanInstanceExtensionsRequired = %s", buffer);
+		free(buffer);
+	}
+
+	buffer_size = OVRC->GetVulkanDeviceExtensionsRequired(vk.physical_device, NULL, 0 );
+	if(buffer_size > 0)
+	{
+		char *buffer = malloc(buffer_size);
+		OVRC->GetVulkanDeviceExtensionsRequired(vk.physical_device, buffer, buffer_size );
+		log_info("GetVulkanDeviceExtensionsRequired = %s", buffer);
+		free(buffer);
+	}
+
 	// Get hmd position matrices
 	hmd_eye_calc(EVREye_Eye_Left, &eye_left, &eye_left_proj);
 	hmd_eye_calc(EVREye_Eye_Right, &eye_right, &eye_right_proj);
@@ -395,54 +382,18 @@ int vr_init(void)
 //	if(!leftEyeDesc.m_nDepthBufferId)
 	{
 		OVR->GetRecommendedRenderTargetSize( &m_nRenderWidth, &m_nRenderHeight );
-		vk_framebuffer( m_nRenderWidth, m_nRenderHeight, &left_eye_fb);
-		vk_framebuffer( m_nRenderWidth, m_nRenderHeight, &right_eye_fb);
+		vk.vr.width = m_nRenderWidth;
+		vk.vr.height = m_nRenderHeight;
 	}
 
-/*
-	if(!eye_prog) eye_prog = shader_load(
-			"data/shaders/window.vert",
-			"data/shaders/window.frag" );
+	vulkan_vr_init();
 
-	float eye_verts[] = {
-		// left eye
-		-0.9f, -0.9f, 0.0f, 0.0f,
-		0.0f, -0.9f, 1.0f, 0.0f,
-		0.0f, 0.9f, 1.0f, 1.0f,
-		-0.9f, 0.9f, 0.0f, 1.0f,
-		// right eye
-		0.1f, -0.9f, 0.0f, 0.0f,
-		0.9f, -0.9f, 1.0f, 0.0f,
-		0.9f, 0.9f, 1.0f, 1.0f,
-		0.1f, 0.9f, 0.0f, 1.0f
-	};
 
-	GLushort eye_ind[]  = { 0, 1, 2,   0, 2, 3,   4, 5, 6,   4, 6, 7};
+	
 
-	if(!eye_VAO)
-	{
-		glGenVertexArrays( 1, &eye_VAO );
-		glBindVertexArray( eye_VAO );
 
-		glGenBuffers( 1, &eye_VBO );
-		glBindBuffer( GL_ARRAY_BUFFER, eye_VBO );
-		glBufferData( GL_ARRAY_BUFFER, sizeof(eye_verts), &eye_verts[0], GL_STATIC_DRAW );
 
-		glGenBuffers( 1, &eye_EAB );
-		glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, eye_EAB );
-		glBufferData( GL_ELEMENT_ARRAY_BUFFER, sizeof(eye_ind), &eye_ind[0], GL_STATIC_DRAW );
 
-		glEnableVertexAttribArray( 0 );
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 16, (void *)0 );
-
-		glEnableVertexAttribArray( 1 );
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 16, (void *)8 );
-
-		glBindVertexArray( 0 );
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	}
-*/
 	vr_using = 1;
 	return 0;
 
@@ -450,14 +401,13 @@ int vr_init(void)
 
 void vr_end(void)
 {
-	vk_framebuffer_end(&left_eye_fb);
-	vk_framebuffer_end(&right_eye_fb);
-	
+	vulkan_vr_end();
+
 	VR_ShutdownInternal();
 	vr_using = 0;
 }
 
-void vr_loop( void render(mat4x4, mat4x4) )
+void vr_loop( void )
 {
 // Process OpenVR events
 	struct VREvent_t vre;
@@ -567,98 +517,101 @@ void vr_loop( void render(mat4x4, mat4x4) )
 	mat4x4 mat_l = mul(eye_left, hmdPose);
 	mat4x4 mat_r = mul(eye_right, hmdPose);
 
+
 	if(controller_left_id != -1)controller_left = vrdevice_poses[controller_left_id];
 	if(controller_right_id != -1)controller_right = vrdevice_poses[controller_right_id];
 
-	render(mat_l, eye_left_proj);
+	render(mat_l, eye_left_proj, &ubo_eye_left);
+	render(mat_r, eye_right_proj, &ubo_eye_right);
+
+	VkResult result;
+	VkPipelineStageFlags vkflags = VK_PIPELINE_STAGE_TRANSFER_BIT;
+	VkSubmitInfo submit_info = {
+		VK_STRUCTURE_TYPE_SUBMIT_INFO,		// VkStructureType                sType;
+		NULL,					// const void*                    pNext;
+		0,					// uint32_t                       waitSemaphoreCount;
+		NULL,					// const VkSemaphore*             pWaitSemaphores;
+		&vkflags,				// const VkPipelineStageFlags*    pWaitDstStageMask;
+		1,					// uint32_t                       commandBufferCount;
+		&vk.vr.commandbuffer,			// const VkCommandBuffer*         pCommandBuffers;
+		0,					// uint32_t                       signalSemaphoreCount;
+		NULL					// const VkSemaphore*             pSignalSemaphores;
+	};
+	result = vkQueueSubmit(vk.queue, 1, &submit_info, VK_NULL_HANDLE);
+	if(result != VK_SUCCESS)
+	{
+		log_warning("vkQueueSubmit = %s", vulkan_result(result));
+	}
 
 
-#ifdef NOT_NOW
-// Render to the Headset
-	// RenderStereoTargets();
-	glEnable( GL_MULTISAMPLE );
+	result = vkQueueWaitIdle(vk.queue);
+	if(result != VK_SUCCESS)
+	{
+		log_warning("vkQueueWaitIdle = %s", vulkan_result(result));
+	}
 
-	//Left eye
-	glBindFramebuffer( GL_FRAMEBUFFER, leftEyeDesc.m_nRenderFramebufferId );
-	glViewport(0, 0, m_nRenderWidth, m_nRenderHeight );
-	render(mat_l, eye_left_proj);
-	ovr_render(mat_l, eye_left_proj);
-	glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-
-	glDisable( GL_MULTISAMPLE );
-
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, leftEyeDesc.m_nRenderFramebufferId);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, leftEyeDesc.m_nResolveFramebufferId );
-
-	glBlitFramebuffer( 0, 0, m_nRenderWidth, m_nRenderHeight, 0, 0, m_nRenderWidth, m_nRenderHeight, 
-		GL_COLOR_BUFFER_BIT,
-		GL_LINEAR );
-
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0 );
-
-	glEnable( GL_MULTISAMPLE );
-
-	// Right Eye
-	glBindFramebuffer( GL_FRAMEBUFFER, rightEyeDesc.m_nRenderFramebufferId );
-	glViewport(0, 0, m_nRenderWidth, m_nRenderHeight );
-	render(mat_r, eye_right_proj);
-	ovr_render(mat_r, eye_right_proj);
-	glBindFramebuffer( GL_FRAMEBUFFER, 0 );
-
-	glDisable( GL_MULTISAMPLE );
-
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, rightEyeDesc.m_nRenderFramebufferId );
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, rightEyeDesc.m_nResolveFramebufferId );
-
-	glBlitFramebuffer( 0, 0, m_nRenderWidth, m_nRenderHeight, 0, 0, m_nRenderWidth, m_nRenderHeight, 
-		GL_COLOR_BUFFER_BIT,
-		GL_LINEAR );
-
-	glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0 );
-	// end RenderStereoTargets();
-
-// render to the monitor
-	// RenderCompanionWindow()
-	glDisable(GL_DEPTH_TEST);
-	glViewport( 0, 0, vid_width, vid_height );
-
-	glBindVertexArray( eye_VAO );
-	glUseProgram( eye_prog->prog );
-
-	// render left eye (first half of index array )
-	glBindTexture(GL_TEXTURE_2D, leftEyeDesc.m_nResolveTextureId );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-	glDrawElements( GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, 0 );
-
-	// render right eye (second half of index array )
-	glBindTexture(GL_TEXTURE_2D, rightEyeDesc.m_nResolveTextureId  );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-	glDrawElements( GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const void *)(uintptr_t)(12) );
-
-	glBindVertexArray( 0 );
-	glUseProgram( 0 );
-	// end RenderCompanionWindow()
-
+	// draw framebuffer in window
 	EVRCompositorError cErr;
-	Texture_t leftEyeTexture = {(void*)(uintptr_t)leftEyeDesc.m_nResolveTextureId, ETextureType_TextureType_OpenGL, EColorSpace_ColorSpace_Gamma};
-	cErr = OVRC->Submit(EVREye_Eye_Left, &leftEyeTexture, NULL, EVRSubmitFlags_Submit_Default);
-	Texture_t rightEyeTexture = {(void*)(uintptr_t)rightEyeDesc.m_nResolveTextureId, ETextureType_TextureType_OpenGL, EColorSpace_ColorSpace_Gamma};
-	cErr = OVRC->Submit(EVREye_Eye_Right, &rightEyeTexture, NULL, EVRSubmitFlags_Submit_Default);
+
+	VRTextureBounds_t bounds;
+	bounds.uMin = 0.0f;
+	bounds.uMax = 1.0f;
+	bounds.vMin = 0.0f;
+	bounds.vMax = 1.0f;
+
+	VRVulkanTextureData_t vulkan_texture_data;
+	vulkan_texture_data.m_nImage = (uint64_t)vk.vr.fb_left.color.image;
+	vulkan_texture_data.m_pDevice = vk.device;
+	vulkan_texture_data.m_pPhysicalDevice = vk.physical_device;
+	vulkan_texture_data.m_pInstance = vk.instance;
+	vulkan_texture_data.m_pQueue = vk.queue;
+	vulkan_texture_data.m_nQueueFamilyIndex = vk.desired_queuefamily;
+	vulkan_texture_data.m_nWidth = vk.vr.width;
+	vulkan_texture_data.m_nHeight = vk.vr.height;
+	vulkan_texture_data.m_nFormat = (uint32_t)VK_FORMAT_R8G8B8A8_SRGB;
+	vulkan_texture_data.m_nSampleCount = 1;
+
+	Texture_t texture;
+	texture.handle = &vulkan_texture_data;
+	texture.eType = ETextureType_TextureType_Vulkan;
+	texture.eColorSpace = EColorSpace_ColorSpace_Auto;
+
+	cErr = OVRC->Submit(EVREye_Eye_Left, &texture, &bounds, EVRSubmitFlags_Submit_Default);
+	static int texture_error = 0;
+	if ( cErr != EVRCompositorError_VRCompositorError_None )
+	{
+		if( texture_error == 0 )
+		{
+			texture_error = 1;
+			log_warning("OVRC->Submit(Left) = %s", vrc_error(cErr));
+		}
+	}
+
+	VRVulkanTextureData_t vulkan_texture_right;
+	vulkan_texture_right.m_nImage = (uint64_t)vk.vr.fb_right.color.image;
+	vulkan_texture_right.m_pDevice = vk.device;
+	vulkan_texture_right.m_pPhysicalDevice = vk.physical_device;
+	vulkan_texture_right.m_pInstance = vk.instance;
+	vulkan_texture_right.m_pQueue = vk.queue;
+	vulkan_texture_right.m_nQueueFamilyIndex = vk.desired_queuefamily;
+	vulkan_texture_right.m_nWidth = vk.vr.fb_right.width;
+	vulkan_texture_right.m_nHeight = vk.vr.fb_right.height;
+	vulkan_texture_right.m_nFormat = vk.vr.fb_right.format;
+	vulkan_texture_right.m_nSampleCount = 1;
+
+//	log_warning("format = %s", vulkan_format(vk.vr.fb_left.format));
 
 
-// work around to force HMD vsync from official example
-	glFinish();
 
-	glFlush();
-	glFinish();
+	Texture_t rightEyeTexture = { (void*)&vulkan_texture_right, ETextureType_TextureType_Vulkan, EColorSpace_ColorSpace_Auto};
+	cErr = OVRC->Submit(EVREye_Eye_Right, &rightEyeTexture, &bounds, EVRSubmitFlags_Submit_Default);
 
-#endif
+	if ( cErr != EVRCompositorError_VRCompositorError_None )
+	{
+		if( texture_error == 0 )
+		{
+			texture_error = 1;
+			log_warning("OVRC->Submit(Right) = %s", vrc_error(cErr));
+		}
+	}
 }

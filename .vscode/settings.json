@@ -18,6 +18,7 @@
 		"*.tcc": "cpp",
 		"deque": "cpp",
 		"vector": "cpp",
-		"time.h": "c"
+		"time.h": "c",
+		"openvr_capi.h": "c"
 	}
 }

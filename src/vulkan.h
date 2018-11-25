@@ -26,6 +26,15 @@ freely, subject to the following restrictions:
 
 #include <vulkan/vulkan.h>
 
+#include "3dmaths.h"
+
+struct MESH_UNIFORM_BUFFER {
+	mat4x4 projection;
+	mat4x4 modelview;
+};
+
+extern struct MESH_UNIFORM_BUFFER ubo_eye_left, ubo_eye_right;
+
 
 struct VULKAN_IMAGEBUFFER {
 	VkImage image;
@@ -41,13 +50,14 @@ struct VULKAN_TEXTURE {
 	VkImageLayout image_layout;
 };
 
-struct VR_framebuffer {
+struct VULKAN_FRAMEBUFFER {
 	struct VULKAN_IMAGEBUFFER color;
 	struct VULKAN_IMAGEBUFFER depth;
-	VkRenderPass render_pass;
 	VkFramebuffer framebuffer;
 	VkImageLayout color_layout;
-	VkImageLayout stencil_layout;
+	VkImageLayout depth_layout;
+	VkFormat format;
+	int width, height;
 };
 
 struct VULKAN_BUFFER {
@@ -71,10 +81,24 @@ struct VULKAN_PIPELINE {
 	VkShaderModule shader_fragment;
 	VkDescriptorSetLayout descriptor_set_layout;
 	VkDescriptorSet descriptor_set;
+
 	struct VULKAN_BUFFER ubo_host;
 	struct VULKAN_BUFFER ubo_device;
 	VkPipelineLayout pipeline_layout;
 	VkPipeline pipeline;
+};
+
+struct VULKAN_VR {
+	VkRenderPass renderpass;
+	VkPipeline pipeline;
+	VkCommandBuffer commandbuffer;
+	VkDescriptorSet descriptor_set;
+	struct VULKAN_BUFFER ubo_host;
+	struct VULKAN_BUFFER ubo_device;
+	struct VULKAN_FRAMEBUFFER fb_left;
+	struct VULKAN_FRAMEBUFFER fb_right;
+	int width;
+	int height;
 };
 
 
@@ -88,8 +112,7 @@ struct VULKAN_HANDLES {
 	VkSwapchainKHR swapchain;
 	VkRenderPass renderpass;
 	VkCommandPool commandpool;
-	VkPipeline pipeline;
-	VkPipelineLayout pipeline_layout;
+
 	VkQueue queue;
 	VkSampler sampler;
 
@@ -112,20 +135,32 @@ struct VULKAN_HANDLES {
 	struct VULKAN_PIPELINE mesh;
 
 	int finished_initialising;
+
+	struct VULKAN_VR vr;
 };
 extern struct VULKAN_HANDLES vk;
 
 int find_memory_type(VkMemoryRequirements requirements, VkMemoryPropertyFlags wanted);
 
 
-int vk_framebuffer(int x, int y, struct VR_framebuffer *fb);
-void vk_framebuffer_end(struct VR_framebuffer *fb);
+int vk_framebuffer(int x, int y, struct VULKAN_FRAMEBUFFER *fb);
+void vk_framebuffer_end(struct VULKAN_FRAMEBUFFER *fb);
 VkResult vk_buffer(VkBufferUsageFlags usage, VkMemoryPropertyFlags flags, struct VULKAN_BUFFER *x, VkDeviceSize size, void *data);
 void vk_buffer_end(struct VULKAN_BUFFER *x);
 
 VkResult vk_imagebuffer(int x, int y, VkFormat format, VkImageUsageFlags usage, VkImageLayout layout, VkImageAspectFlags aspect_mask, struct VULKAN_IMAGEBUFFER *b);
 void vk_imagebuffer_end(struct VULKAN_IMAGEBUFFER *x);
 
+
+void vulkan_vr_init(void);
+void vulkan_vr_end(void);
+void vk_commandbuffers_vr(struct VULKAN_FRAMEBUFFER *fb);
+
+
+
+int vulkan_init(void);
+int vulkan_loop(void);
+void vulkan_end(void);
 
 #endif
 

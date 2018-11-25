@@ -204,6 +204,7 @@ static void mtl_load(WF_OBJ *w, char *filename)
 	FILE *fptr = fopen(filepath, "r");
 	if(!fptr)
 	{
+		log_error("fopen(\"%s\")", filepath);
 		free(filepath);
 		return;
 	}
@@ -607,7 +608,11 @@ WF_OBJ* wf_parse(char *filename)
 {
 	log_info("Loading Wavefront OBJ(\"%s\");", filename);
 	FILE *fptr = fopen(filename, "r");
-	if(!fptr)return 0;
+	if(!fptr)
+	{
+		log_error("fopen(\"%s\")", filename);
+		return 0;
+	}
 
 	char buf[1024];
 	int i;

@@ -3,9 +3,7 @@
 #import <QuartzCore/CAMetalLayer.h>
 
 #include <sys/time.h>
-
 #include <MoltenVK/mvk_vulkan.h>
-
 #include "log.h"
 ///////////////////////////////////////////////////////////////////////////////
 //////// Public Interface to the rest of the program
@@ -36,13 +34,13 @@ int main_init(int argc, char *argv[]);
 void main_loop(void);
 void main_end(void);
 
-const int sys_ticksecond = 1000000;
-long long sys_time(void)
+const uint64_t sys_ticksecond = 1000000000;
+static uint64_t sys_time_start = 0;
+uint64_t sys_time(void)
 {
-	struct timeval tv;
-	tv.tv_usec = 0;	// tv.tv_sec = 0;
-	gettimeofday(&tv, NULL);
-	return tv.tv_usec + tv.tv_sec * sys_ticksecond;
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+	return (ts.tv_sec * 1000000000 + ts.tv_nsec) - sys_time_start;
 }
 
 void shell_browser(char *url)
@@ -110,6 +108,7 @@ static CVReturn DisplayLinkCallback(CVDisplayLinkRef displayLink,
 	CALayer *layer = [self.class.layerClass layer];
 	CGSize viewScale = [self convertSizeToBacking: CGSizeMake(1.0, 1.0)];
 	layer.contentsScale = MIN(viewScale.width, viewScale.height);
+
 	return layer;
 }
 @end
@@ -140,6 +139,7 @@ static CVReturn DisplayLinkCallback(CVDisplayLinkRef displayLink,
 	// init
 	CVDisplayLinkStart(_displayLink);
 	log_debug("no really, we did finish launching");
+	
 }
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification
@@ -235,6 +235,9 @@ static int event_handler(NSEvent *event)
 
 int main(int argc, char * argv[])
 {
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+	sys_time_start = ts.tv_sec * 1000000000 + ts.tv_nsec;
 	log_init();
 	log_info("Platform    : MacOS");
 
@@ -283,8 +286,12 @@ int main(int argc, char * argv[])
 	view.wantsLayer = YES;
 	pView = [view layer];
 
+log_warning("layer = %s", [[(id)pView description] cStringUsingEncoding:typeUTF8Text]);
+
+
 	if( main_init(argc, argv) )
 		killme = 1;
+//log_warning("layer = %s", [[[view layer] description] cStringUsingEncoding:typeUTF8Text]);
 
 	// main loop
 	float time = 0.0;

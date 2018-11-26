@@ -380,12 +380,6 @@ int vr_init(void)
 
 	vulkan_vr_init();
 
-
-	
-
-
-
-
 	vr_using = 1;
 	return 0;
 
@@ -393,9 +387,11 @@ int vr_init(void)
 
 void vr_end(void)
 {
+	vkQueueWaitIdle(vk.queue);
+	VR_ShutdownInternal();
+	vkQueueWaitIdle(vk.queue);
 	vulkan_vr_end();
 
-	VR_ShutdownInternal();
 	vr_using = 0;
 }
 
@@ -560,7 +556,7 @@ void vr_loop( void )
 	vulkan_texture_data.m_nQueueFamilyIndex = vk.desired_queuefamily;
 	vulkan_texture_data.m_nWidth = vk.vr.width;
 	vulkan_texture_data.m_nHeight = vk.vr.height;
-	vulkan_texture_data.m_nFormat = (uint32_t)VK_FORMAT_R8G8B8A8_SRGB;
+	vulkan_texture_data.m_nFormat = vk.vr.fb_left.format;
 	vulkan_texture_data.m_nSampleCount = 1;
 
 	Texture_t texture;
@@ -586,8 +582,8 @@ void vr_loop( void )
 	vulkan_texture_right.m_pInstance = vk.instance;
 	vulkan_texture_right.m_pQueue = vk.queue;
 	vulkan_texture_right.m_nQueueFamilyIndex = vk.desired_queuefamily;
-	vulkan_texture_right.m_nWidth = vk.vr.fb_right.width;
-	vulkan_texture_right.m_nHeight = vk.vr.fb_right.height;
+	vulkan_texture_right.m_nWidth = vk.vr.width;
+	vulkan_texture_right.m_nHeight = vk.vr.height;
 	vulkan_texture_right.m_nFormat = vk.vr.fb_right.format;
 	vulkan_texture_right.m_nSampleCount = 1;
 
@@ -606,4 +602,7 @@ void vr_loop( void )
 			log_warning("OVRC->Submit(Right) = %s", vrc_error(cErr));
 		}
 	}
+
+	OVRC->PostPresentHandoff();
+
 }

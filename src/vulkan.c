@@ -25,11 +25,11 @@ freely, subject to the following restrictions:
 
 #define VK_USE_PLATFORM_WIN32_KHR
 #include <vulkan/vulkan.h>
-static const uint32_t vulkan_extention_count = 4;
+static const uint32_t vulkan_extention_count = 5;
 static const char * vulkan_extension_strings[] = {
 	VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
 	VK_KHR_SURFACE_EXTENSION_NAME,
-//	VK_NV_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME
+	VK_NV_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
 	VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
 	VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME
 	};
@@ -856,14 +856,46 @@ int vulkan_init(void)
 	VkResult result;
 	vk.finished_initialising = 0;
 
-	int layer_count = 1;
+	int layer_count = 0;
 	const char *layer_names[] = {
-
 		"VK_LAYER_LUNARG_standard_validation",
 	};
 #ifdef __APPLE__
 	layer_count = 0;
 #endif
+	uint32_t property_count;
+	result = vkEnumerateInstanceExtensionProperties(NULL, &property_count, NULL);
+	if( result != VK_SUCCESS )
+	{
+		log_warning("vkEnumerateInstanceExtensionProperties(NULL) = %s", vulkan_result(result));
+	}
+	VkExtensionProperties *extension_properties = NULL;
+	if(property_count)
+	{
+		extension_properties = malloc(sizeof(VkExtensionProperties) * property_count);
+		if( extension_properties == NULL )
+		{
+			log_fatal("malloc(VkExtensionProperties)");
+			return 1; // If malloc fails this early, just give up
+		}
+	}
+
+	result = vkEnumerateInstanceExtensionProperties(NULL, &property_count, extension_properties);
+	if( result != VK_SUCCESS )
+	{
+		log_warning("vkEnumerateInstanceExtensionProperties() = %s", vulkan_result(result));
+	}
+
+	for(int i=0; i<property_count; i++)
+	{
+		log_info("extension_properties[%d] = %s", i, extension_properties[i].extensionName);
+	}
+	free(extension_properties);
+
+	for(int i=0; i<vulkan_extention_count; i++)
+	{
+		log_info("requested_extension[%d] = %s", i, vulkan_extension_strings[i]);
+	}
 
 
 	/* Vulkan Initialisation is here! */
@@ -872,8 +904,8 @@ int vulkan_init(void)
 		NULL,					// const void*                 pNext;
 		0,					// VkInstanceCreateFlags       flags;
 		0,					// const VkApplicationInfo*    pApplicationInfo;
-		layer_count,					// uint32_t                    enabledLayerCount;
-		layer_names,					// const char* const*          ppEnabledLayerNames;
+		layer_count,				// uint32_t                    enabledLayerCount;
+		layer_names,				// const char* const*          ppEnabledLayerNames;
 		vulkan_extention_count,			// uint32_t                    enabledExtensionCount;
 		vulkan_extension_strings		// const char* const*          ppEnabledExtensionNames;
 	};
@@ -983,14 +1015,14 @@ int vulkan_init(void)
 		&queue_priority					// const float*                pQueuePriorities;
 	};
 
-	uint32_t pd_ext_count = 1;
+	uint32_t pd_ext_count = 5;
 	const char * pd_ext_strings [] = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-//		VK_NV_DEDICATED_ALLOCATION_EXTENSION_NAME,
-//		VK_NV_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
-//		VK_NV_EXTERNAL_MEMORY_EXTENSION_NAME,
-//		VK_NV_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,
-//		VK_NV_WIN32_KEYED_MUTEX_EXTENSION_NAME
+		VK_NV_DEDICATED_ALLOCATION_EXTENSION_NAME,
+		VK_NV_EXTERNAL_MEMORY_EXTENSION_NAME,
+		VK_NV_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,
+		VK_NV_WIN32_KEYED_MUTEX_EXTENSION_NAME,
+		VK_NV_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
 	};
 	VkDeviceCreateInfo vkdci = {
 		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	// VkStructureType                    sType;
@@ -1796,7 +1828,7 @@ void vk_commandbuffers(void)
 void vulkan_vr_init(void)
 {
 	VkResult result;
-	VkFormat vr_format = VK_FORMAT_R8G8B8A8_SRGB;
+	VkFormat vr_format = VK_FORMAT_B8G8R8A8_SRGB;
 	vk.vr.fb_left.format = vr_format;
 	vk.vr.fb_right.format = vr_format;
 

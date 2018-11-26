@@ -513,6 +513,28 @@ void vr_loop( void )
 	render(mat_r, eye_right_proj, &ubo_eye_right);
 
 	VkResult result;
+	void *data;
+	VkDeviceSize size = sizeof(struct MESH_UNIFORM_BUFFER);
+
+	// left eye UBO
+	result = vkMapMemory(vk.device, vk.mesh.ubo_host.memory, 0, size, 0, &data);
+	if( result != VK_SUCCESS )
+	{
+		log_fatal("vkMapMemory = %s", vulkan_result(result));
+	}
+	memcpy(data, &ubo_eye_left, size);
+	vkUnmapMemory(vk.device, vk.mesh.ubo_host.memory);
+
+	// right eye UBO
+	result = vkMapMemory(vk.device, vk.vr.ubo_host.memory, 0, size, 0, &data);
+	if( result != VK_SUCCESS )
+	{
+		log_fatal("vkMapMemory = %s", vulkan_result(result));
+	}
+	memcpy(data, &ubo_eye_right, size);
+	vkUnmapMemory(vk.device, vk.vr.ubo_host.memory);
+
+
 	VkPipelineStageFlags vkflags = VK_PIPELINE_STAGE_TRANSFER_BIT;
 	VkSubmitInfo submit_info = {
 		VK_STRUCTURE_TYPE_SUBMIT_INFO,		// VkStructureType                sType;

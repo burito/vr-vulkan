@@ -65,6 +65,10 @@ struct VR_IVRRenderModels_FnTable * OVRM;
 // k_unMaxTrackedDeviceCount = 16 // gcc doesn't like the way this is declared
 TrackedDevicePose_t m_rTrackedDevicePose [16];
 
+
+static char *vulkan_instance_extension_buffer = NULL;
+static char *vulkan_physical_device_extension_buffer = NULL;
+
 uint32_t m_nRenderWidth;
 uint32_t m_nRenderHeight;
 int m_iValidPoseCount;
@@ -341,19 +345,50 @@ int vr_init(void)
 	uint32_t buffer_size = OVRC->GetVulkanInstanceExtensionsRequired( NULL, 0 );
 	if(buffer_size > 0)
 	{
-		char *buffer = malloc(buffer_size);
-		OVRC->GetVulkanInstanceExtensionsRequired( buffer, buffer_size );
-		log_info("GetVulkanInstanceExtensionsRequired = %s", buffer);
-		free(buffer);
+		vulkan_instance_extension_buffer = malloc(buffer_size);
+		if( vulkan_instance_extension_buffer == NULL )
+		{
+			log_fatal("malloc(vulkan_instance_extension_buffer)");
+			return 1;
+		}
+		OVRC->GetVulkanInstanceExtensionsRequired( vulkan_instance_extension_buffer, buffer_size );
+		log_info("GetVulkanInstanceExtensionsRequired = %s", vulkan_instance_extension_buffer);
+
+		char delim[] = " ";
+		char *saveptr = NULL;
+		char *new_ext = NULL;
+		new_ext = strtok_r(vulkan_instance_extension_buffer, delim, &saveptr);
+		while( new_ext != NULL )
+		{
+			vulkan_instance_extension_strings[vulkan_instance_extension_count] = new_ext;
+			vulkan_instance_extension_count++;
+			new_ext = strtok_r( NULL, delim, &saveptr);
+		}
 	}
 
 	buffer_size = OVRC->GetVulkanDeviceExtensionsRequired(vk.physical_device, NULL, 0 );
 	if(buffer_size > 0)
 	{
-		char *buffer = malloc(buffer_size);
-		OVRC->GetVulkanDeviceExtensionsRequired(vk.physical_device, buffer, buffer_size );
-		log_info("GetVulkanDeviceExtensionsRequired = %s", buffer);
-		free(buffer);
+		vulkan_physical_device_extension_buffer = malloc(buffer_size);
+		if( vulkan_physical_device_extension_buffer == NULL )
+		{
+			log_fatal("malloc(vulkan_physical_device_extension_buffer)");
+			return 1;
+		}
+
+		OVRC->GetVulkanDeviceExtensionsRequired(vk.physical_device, vulkan_physical_device_extension_buffer, buffer_size );
+		log_info("GetVulkanDeviceExtensionsRequired = %s", vulkan_physical_device_extension_buffer);
+
+		char delim[] = " ";
+		char *saveptr = NULL;
+		char *new_ext = NULL;
+		new_ext = strtok_r(vulkan_physical_device_extension_buffer, delim, &saveptr);
+		while( new_ext != NULL )
+		{
+			vulkan_physical_device_extension_strings[vulkan_physical_device_extension_count] = new_ext;
+			vulkan_physical_device_extension_count++;
+			new_ext = strtok_r( NULL, delim, &saveptr);
+		}
 	}
 
 	// Get hmd position matrices
@@ -378,6 +413,10 @@ int vr_init(void)
 		vk.vr.height = m_nRenderHeight;
 	}
 
+	vulkan_end();
+	// to re-init with requested extensions
+	vulkan_init();
+
 	vulkan_vr_init();
 
 	vr_using = 1;
@@ -387,6 +426,10 @@ int vr_init(void)
 
 void vr_end(void)
 {
+	// TODO: currently intentionally leaking these...
+//	free(vulkan_instance_extension_buffer);
+//	free(vulkan_physical_device_extension_buffer);
+
 	vkQueueWaitIdle(vk.queue);
 	VR_ShutdownInternal();
 	vkQueueWaitIdle(vk.queue);

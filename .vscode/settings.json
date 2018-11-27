@@ -19,6 +19,7 @@
 		"deque": "cpp",
 		"vector": "cpp",
 		"time.h": "c",
-		"openvr_capi.h": "c"
+		"openvr_capi.h": "c",
+		"mesh_vert_spv.h": "c"
 	}
 }

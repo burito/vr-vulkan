@@ -18,57 +18,42 @@ freely, subject to the following restrictions:
 3. This notice may not be removed or altered from any source distribution.
 */
 
-// we don't want XLIB, XCB works better
+// do we want XLIB or XCB?
 #define USE_LINUX_XLIB
 
+// tell Vulkan header what platform we want
 #ifdef _WIN32
-
 #define VK_USE_PLATFORM_WIN32_KHR
 #include <vulkan/vulkan.h>
-static const uint32_t vulkan_extention_count = 5;
-static const char * vulkan_extension_strings[] = {
-	VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
-	VK_KHR_SURFACE_EXTENSION_NAME,
-	VK_NV_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
-	VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
-	VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME
-	};
 extern HINSTANCE hInst;
 extern HWND hWnd;
-
 #elif defined __APPLE__
-
 #define VK_USE_PLATFORM_MACOS_MVK
 #include <vulkan/vulkan.h>
-static const uint32_t vulkan_extention_count = 2;
-static const char * vulkan_extension_strings[2] = {
-	VK_MVK_MACOS_SURFACE_EXTENSION_NAME,
-	VK_KHR_SURFACE_EXTENSION_NAME };
 extern void* pView;
-
 #elif defined USE_LINUX_XLIB
-
 #define VK_USE_PLATFORM_XLIB_KHR
 #include <vulkan/vulkan.h>
-static const uint32_t vulkan_extention_count = 2;
-static const char * vulkan_extension_strings[2] = {
-	VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
-	VK_KHR_SURFACE_EXTENSION_NAME };
 extern Display* display;
 extern Window window;
-
 #else
-
 #define VK_USE_PLATFORM_XCB_KHR
 #include <vulkan/vulkan.h>
-static const uint32_t vulkan_extention_count = 2;
-static const char * vulkan_extension_strings[2] = {
-	VK_KHR_XCB_SURFACE_EXTENSION_NAME,
-	VK_KHR_SURFACE_EXTENSION_NAME };
 extern xcb_connection_t *xcb;
 extern xcb_window_t window;
-
 #endif
+
+#include "vulkan.h"
+
+// every platform instance needs 2 extensions, that we always place first
+uint32_t vulkan_instance_extension_count = 2;
+char *vulkan_instance_extension_strings[VULKAN_MAX_EXTENSIONS];
+
+// every platform device needs 1 extension, that we always place first
+uint32_t vulkan_physical_device_extension_count = 1;
+char *vulkan_physical_device_extension_strings[VULKAN_MAX_EXTENSIONS];
+
+
 
 #define LOG_NO_TRACE
 #include "log.h"
@@ -856,7 +841,23 @@ int vulkan_init(void)
 	VkResult result;
 	vk.finished_initialising = 0;
 
-	int layer_count = 0;
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+	vulkan_instance_extension_strings[0] = VK_KHR_WIN32_SURFACE_EXTENSION_NAME;
+#endif
+#ifdef VK_USE_PLATFORM_MACOS_MVK
+	vulkan_instance_extension_strings[0] = VK_MVK_MACOS_SURFACE_EXTENSION_NAME;
+#endif
+#ifdef VK_USE_PLATFORM_XLIB_KHR
+	vulkan_instance_extension_strings[0] = VK_KHR_XLIB_SURFACE_EXTENSION_NAME;
+#endif
+#ifdef VK_USE_PLATFORM_XCB_KHR
+	vulkan_instance_extension_strings[0] = VK_KHR_XCB_SURFACE_EXTENSION_NAME;
+#endif
+
+	vulkan_instance_extension_strings[1] = VK_KHR_SURFACE_EXTENSION_NAME;
+
+
+	int layer_count = 1;
 	const char *layer_names[] = {
 		"VK_LAYER_LUNARG_standard_validation",
 	};
@@ -892,9 +893,9 @@ int vulkan_init(void)
 	}
 	free(extension_properties);
 
-	for(int i=0; i<vulkan_extention_count; i++)
+	for(int i=0; i<vulkan_instance_extension_count; i++)
 	{
-		log_info("requested_extension[%d] = %s", i, vulkan_extension_strings[i]);
+		log_info("requested_extension[%d] = %s", i, vulkan_instance_extension_strings[i]);
 	}
 
 
@@ -906,8 +907,8 @@ int vulkan_init(void)
 		0,					// const VkApplicationInfo*    pApplicationInfo;
 		layer_count,				// uint32_t                    enabledLayerCount;
 		layer_names,				// const char* const*          ppEnabledLayerNames;
-		vulkan_extention_count,			// uint32_t                    enabledExtensionCount;
-		vulkan_extension_strings		// const char* const*          ppEnabledExtensionNames;
+		vulkan_instance_extension_count,	// uint32_t                    enabledExtensionCount;
+		vulkan_instance_extension_strings	// const char* const*          ppEnabledExtensionNames;
 	};
 
 	result = vkCreateInstance(&vkici, 0, &vk.instance);
@@ -1015,26 +1016,20 @@ int vulkan_init(void)
 		&queue_priority					// const float*                pQueuePriorities;
 	};
 
-	uint32_t pd_ext_count = 5;
-	const char * pd_ext_strings [] = {
-		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-		VK_NV_DEDICATED_ALLOCATION_EXTENSION_NAME,
-		VK_NV_EXTERNAL_MEMORY_EXTENSION_NAME,
-		VK_NV_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,
-		VK_NV_WIN32_KEYED_MUTEX_EXTENSION_NAME,
-		VK_NV_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
-	};
+	// every platform uses this extension, so it is always first
+	vulkan_physical_device_extension_strings[0] = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+
 	VkDeviceCreateInfo vkdci = {
-		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,	// VkStructureType                    sType;
-		NULL,					// const void*                        pNext;
-		0,					// VkDeviceCreateFlags                flags;
-		1,					// uint32_t                           queueCreateInfoCount;
-		&vkqci,					// const VkDeviceQueueCreateInfo*     pQueueCreateInfos;
-		0,					// uint32_t                           enabledLayerCount;
-		0,					// const char* const*                 ppEnabledLayerNames;
-		pd_ext_count,				// uint32_t                           enabledExtensionCount;
-		pd_ext_strings,				// const char* const*                 ppEnabledExtensionNames;
-		0					// const VkPhysicalDeviceFeatures*    pEnabledFeatures;
+		VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,		// VkStructureType                    sType;
+		NULL,						// const void*                        pNext;
+		0,						// VkDeviceCreateFlags                flags;
+		1,						// uint32_t                           queueCreateInfoCount;
+		&vkqci,						// const VkDeviceQueueCreateInfo*     pQueueCreateInfos;
+		0,						// uint32_t                           enabledLayerCount;
+		0,						// const char* const*                 ppEnabledLayerNames;
+		vulkan_physical_device_extension_count,		// uint32_t                           enabledExtensionCount;
+		vulkan_physical_device_extension_strings,	// const char* const*                 ppEnabledExtensionNames;
+		0						// const VkPhysicalDeviceFeatures*    pEnabledFeatures;
 	};
 	result = vkCreateDevice(vk.physical_device, &vkdci, 0, &vk.device);
 	if( result != VK_SUCCESS )

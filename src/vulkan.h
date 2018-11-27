@@ -26,6 +26,14 @@ freely, subject to the following restrictions:
 
 #include <vulkan/vulkan.h>
 
+#define VULKAN_MAX_EXTENSIONS 10
+extern uint32_t vulkan_instance_extension_count;
+extern char *vulkan_instance_extension_strings[VULKAN_MAX_EXTENSIONS];
+
+extern uint32_t vulkan_physical_device_extension_count;
+extern char *vulkan_physical_device_extension_strings[VULKAN_MAX_EXTENSIONS];
+
+
 #include "3dmaths.h"
 
 struct MESH_UNIFORM_BUFFER {

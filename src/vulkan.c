@@ -43,18 +43,6 @@ extern xcb_connection_t *xcb;
 extern xcb_window_t window;
 #endif
 
-#include "vulkan.h"
-
-// every platform instance needs 2 extensions, that we always place first
-uint32_t vulkan_instance_extension_count = 2;
-char *vulkan_instance_extension_strings[VULKAN_MAX_EXTENSIONS];
-
-// every platform device needs 1 extension, that we always place first
-uint32_t vulkan_physical_device_extension_count = 1;
-char *vulkan_physical_device_extension_strings[VULKAN_MAX_EXTENSIONS];
-
-
-
 #define LOG_NO_TRACE
 #include "log.h"
 
@@ -72,6 +60,18 @@ char *vulkan_physical_device_extension_strings[VULKAN_MAX_EXTENSIONS];
 
 #include "mesh_vert_spv.h"
 #include "mesh_frag_spv.h"
+
+
+
+#include "vulkan.h"
+
+// every platform instance needs 2 extensions, that we always place first
+uint32_t vulkan_instance_extension_count = 2;
+char *vulkan_instance_extension_strings[VULKAN_MAX_EXTENSIONS];
+
+// every platform device needs 1 extension, that we always place first
+uint32_t vulkan_physical_device_extension_count = 1;
+char *vulkan_physical_device_extension_strings[VULKAN_MAX_EXTENSIONS];
 
 
 int vk_swapchain_init(void);
@@ -908,7 +908,7 @@ int vulkan_init(void)
 		layer_count,				// uint32_t                    enabledLayerCount;
 		layer_names,				// const char* const*          ppEnabledLayerNames;
 		vulkan_instance_extension_count,	// uint32_t                    enabledExtensionCount;
-		vulkan_instance_extension_strings	// const char* const*          ppEnabledExtensionNames;
+		(const char* const*)vulkan_instance_extension_strings	// const char* const*          ppEnabledExtensionNames;
 	};
 
 	result = vkCreateInstance(&vkici, 0, &vk.instance);
@@ -1028,7 +1028,7 @@ int vulkan_init(void)
 		0,						// uint32_t                           enabledLayerCount;
 		0,						// const char* const*                 ppEnabledLayerNames;
 		vulkan_physical_device_extension_count,		// uint32_t                           enabledExtensionCount;
-		vulkan_physical_device_extension_strings,	// const char* const*                 ppEnabledExtensionNames;
+		(const char* const*)vulkan_physical_device_extension_strings,	// const char* const*                 ppEnabledExtensionNames;
 		0						// const VkPhysicalDeviceFeatures*    pEnabledFeatures;
 	};
 	result = vkCreateDevice(vk.physical_device, &vkdci, 0, &vk.device);

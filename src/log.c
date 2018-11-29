@@ -32,32 +32,6 @@ freely, subject to the following restrictions:
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-
-#ifndef __GNUC__
-// https://stackoverflow.com/questions/5404277/porting-clock-gettime-to-windows
-#define exp7           10000000i64     //1E+7     //C-file part
-#define exp9         1000000000i64     //1E+9
-#define w2ux 116444736000000000i64     //1.jan1601 to 1.jan1970
-void unix_time(struct timespec *spec)
-{  __int64 wintime; GetSystemTimeAsFileTime((FILETIME*)&wintime); 
-   wintime -=w2ux;  spec->tv_sec  =wintime / exp7;                 
-                    spec->tv_nsec =wintime % exp7 *100;
-}
-int clock_gettime(int X, struct timespec *spec)
-{  static  struct timespec startspec; static double ticks2nano;
-   static __int64 startticks, tps =0;    __int64 tmp, curticks;
-   QueryPerformanceFrequency((LARGE_INTEGER*)&tmp); //some strange system can
-   if (tps !=tmp) { tps =tmp; //init ~~ONCE         //possibly change freq ?
-                    QueryPerformanceCounter((LARGE_INTEGER*)&startticks);
-                    unix_time(&startspec); ticks2nano =(double)exp9 / tps; }
-   QueryPerformanceCounter((LARGE_INTEGER*)&curticks); curticks -=startticks;
-   spec->tv_sec  =startspec.tv_sec   +         (curticks / tps);
-   spec->tv_nsec =startspec.tv_nsec  + (double)(curticks % tps) * ticks2nano;
-         if (!(spec->tv_nsec < exp9)) { spec->tv_sec++; spec->tv_nsec -=exp9; }
-   return 0;
-}
-
-#endif
 #endif
 
 
@@ -84,19 +58,19 @@ static const char * log_label(enum LOG_LEVEL level)
 {
 	switch(level) {
 	case LOG_TRACE:
-		return "\x1b[37m[TRACE]\x1b[0m";		// bright white
+		return "\x1b[37m[TRACE]\x1b[0m";	// bright white
 	case LOG_DEBUG:
-		return "\x1b[36m[DEBUG]\x1b[0m";		// cyan
+		return "\x1b[36m[DEBUG]\x1b[0m";	// cyan
 	case LOG_VERBOSE:
-		return "\x1b[34m[VERBOSE]\x1b[0m";		// blue
+		return "\x1b[34m[VERBOSE]\x1b[0m";	// blue
 	case LOG_INFO:
 		return "\x1b[32m[INFO]\x1b[0m";		// green
 	case LOG_WARNING:
-		return "\x1b[33m[WARN]\x1b[0m";	// yellow
+		return "\x1b[33m[WARN]\x1b[0m";		// yellow
 	case LOG_ERROR:
-		return "\x1b[35m[ERROR]\x1b[0m";		// magenta
+		return "\x1b[35m[ERROR]\x1b[0m";	// magenta
 	case LOG_FATAL:
-		return "\x1b[31m[FATAL]\x1b[0m";		// red
+		return "\x1b[31m[FATAL]\x1b[0m";	// red
 	default:
 		return "\x1b[0m";		// reset
 	}
@@ -117,7 +91,7 @@ void log_out(char* file, int line, enum LOG_LEVEL level, char *fmt, ...)
 	tv.tv_nsec = fmod( now, 1.0) * 1000000000.0f;
 	tv.tv_sec = (uint64_t)now;
 
-#ifdef __APPLE__
+#ifdef __clang__
 	printf( "%lld.%09ld %s:%d %s ",
 #else
 	printf( "%ld.%09ld %s:%d %s ",
@@ -136,7 +110,7 @@ void log_out(char* file, int line, enum LOG_LEVEL level, char *fmt, ...)
 */
 
 	va_list args;
-	va_start(args, fmt);		
+	va_start(args, fmt);
 	vprintf(fmt, args);
 	va_end(args);
 

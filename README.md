@@ -109,8 +109,7 @@ Credits
 	* 6eac02b84ad06870692abaf828638a391548502c
 * ```deps/*openvr*``` - Valve Software
 	* https://github.com/ValveSoftware/openvr
-	* OpenVR 1.0.17 - 1fb1030f2ac238456dca7615a4408fb2bb42afb6
-	* Fix the typo in ```openvr_capi.h``` from version 1.0.11
+	* OpenVR 1.1.3b - 64fc05966a109543a1e191a45e1ab3a25a651211
 * ```deps/include/vulkan/*``` - Khronos Group
 	* https://github.com/KhronosGroup/Vulkan-Headers
 	* 369e6ea7f9b8cf0155b183da7e5be1b39ef6138d

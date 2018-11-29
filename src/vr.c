@@ -24,6 +24,11 @@ freely, subject to the following restrictions:
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef __STDC_LIB_EXT1__
+#define __STDC_WANT_LIB_EXT1__ 1	// for strtok_s
+#else
+#define strtok_s strtok_r
+#endif
 #include <string.h>
 #include <openvr_capi.h>
 

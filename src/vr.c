@@ -357,12 +357,12 @@ int vr_init(void)
 		char delim[] = " ";
 		char *saveptr = NULL;
 		char *new_ext = NULL;
-		new_ext = strtok_r(vulkan_instance_extension_buffer, delim, &saveptr);
+		new_ext = strtok_s(vulkan_instance_extension_buffer, delim, &saveptr);
 		while( new_ext != NULL )
 		{
 			vulkan_instance_extension_strings[vulkan_instance_extension_count] = new_ext;
 			vulkan_instance_extension_count++;
-			new_ext = strtok_r( NULL, delim, &saveptr);
+			new_ext = strtok_s( NULL, delim, &saveptr);
 		}
 	}
 
@@ -382,12 +382,12 @@ int vr_init(void)
 		char delim[] = " ";
 		char *saveptr = NULL;
 		char *new_ext = NULL;
-		new_ext = strtok_r(vulkan_physical_device_extension_buffer, delim, &saveptr);
+		new_ext = strtok_s(vulkan_physical_device_extension_buffer, delim, &saveptr);
 		while( new_ext != NULL )
 		{
 			vulkan_physical_device_extension_strings[vulkan_physical_device_extension_count] = new_ext;
 			vulkan_physical_device_extension_count++;
-			new_ext = strtok_r( NULL, delim, &saveptr);
+			new_ext = strtok_s( NULL, delim, &saveptr);
 		}
 	}
 

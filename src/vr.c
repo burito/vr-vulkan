@@ -20,17 +20,21 @@ freely, subject to the following restrictions:
    3. This notice may not be removed or altered from any source
    distribution.
 */
+
+#define _XOPEN_SOURCE	// for strtok_r on linux
+
 #include <vulkan/vulkan.h>
 
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef __STDC_LIB_EXT1__
-#define __STDC_WANT_LIB_EXT1__ 1	// for strtok_s
-#else
-#define strtok_s strtok_r
-#endif
 #include <string.h>
 #include <openvr_capi.h>
+
+#ifdef _WIN32
+#define strtok_r strtok_s
+#endif
+
+
 
 #ifdef _WIN32
 //#define WIN32_LEAN_AND_MEAN
@@ -362,12 +366,12 @@ int vr_init(void)
 		char delim[] = " ";
 		char *saveptr = NULL;
 		char *new_ext = NULL;
-		new_ext = strtok_s(vulkan_instance_extension_buffer, delim, &saveptr);
+		new_ext = strtok_r(vulkan_instance_extension_buffer, delim, &saveptr);
 		while( new_ext != NULL )
 		{
 			vulkan_instance_extension_strings[vulkan_instance_extension_count] = new_ext;
 			vulkan_instance_extension_count++;
-			new_ext = strtok_s( NULL, delim, &saveptr);
+			new_ext = strtok_r( NULL, delim, &saveptr);
 		}
 	}
 
@@ -387,12 +391,12 @@ int vr_init(void)
 		char delim[] = " ";
 		char *saveptr = NULL;
 		char *new_ext = NULL;
-		new_ext = strtok_s(vulkan_physical_device_extension_buffer, delim, &saveptr);
+		new_ext = strtok_r(vulkan_physical_device_extension_buffer, delim, &saveptr);
 		while( new_ext != NULL )
 		{
 			vulkan_physical_device_extension_strings[vulkan_physical_device_extension_count] = new_ext;
 			vulkan_physical_device_extension_count++;
-			new_ext = strtok_s( NULL, delim, &saveptr);
+			new_ext = strtok_r( NULL, delim, &saveptr);
 		}
 	}
 

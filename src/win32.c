@@ -368,6 +368,7 @@ static LONG WINAPI wProc(HWND hWndProc, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		return 0;
 
 	case WM_CLOSE:
+		log_info("Shutdown on : Window close");
 		killme=1;
 		return 0;
 	}

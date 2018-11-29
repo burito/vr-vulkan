@@ -405,7 +405,7 @@ static void wf_vertex_normals(WF_OBJ *w)
 	{
 		tmp = vert[i].next;
 		if(!tmp)continue;
-		vect t = {{0,0,0}};
+		vect t = {.f={0,0,0}};
 		while(tmp)
 		{
 			t = add(t, w->f[tmp->face].normal);

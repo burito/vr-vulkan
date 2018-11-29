@@ -110,7 +110,7 @@ void main_loop(void)
 	if(keys[KEY_F12])
 	{
 		keys[KEY_F12] = 0;
-		log_info("toggle VR");
+		log_info("VR %s", (vr_using?"Shutdown":"Startup") );
 		if(!vr_using)vr_init();
 		else vr_end();
 	}

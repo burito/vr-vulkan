@@ -46,7 +46,7 @@ OBJS = main.o log.o vr.o vr_helper.o vulkan.o vulkan_helper.o version.o 3dmaths.
 CFLAGS = -std=c11 -Ideps/include -Ibuild -Wno-deprecated-declarations
 VPATH = src build deps
 
-WIN_LIBS = -luser32 -lwinmm -lgdi32 -lXInput -lshell32
+WIN_LIBS = -luser32 -lwinmm -lgdi32 -lshell32
 # use this line with gcc
 WIN_LIBS += c:/Windows/system32/vulkan-1.dll openvr_api.dll 
 # use this line with clang/msvc

@@ -22,7 +22,6 @@ freely, subject to the following restrictions:
 */
 
 #include <windows.h>
-#include <Xinput.h>
 #include <stdio.h>
 #include <stdint.h>
 
@@ -102,6 +101,54 @@ int focus = 1;
 int menu = 1;
 int sys_bpp = 32;
 
+///////////////////////////////////////////////////////////////////////////////
+//////// borrowed from XInput.h 
+///////////////////////////////////////////////////////////////////////////////
+//#include <Xinput.h>
+#define XINPUT_GAMEPAD_DPAD_UP          0x0001
+#define XINPUT_GAMEPAD_DPAD_DOWN        0x0002
+#define XINPUT_GAMEPAD_DPAD_LEFT        0x0004
+#define XINPUT_GAMEPAD_DPAD_RIGHT       0x0008
+#define XINPUT_GAMEPAD_START            0x0010
+#define XINPUT_GAMEPAD_BACK             0x0020
+#define XINPUT_GAMEPAD_LEFT_THUMB       0x0040
+#define XINPUT_GAMEPAD_RIGHT_THUMB      0x0080
+#define XINPUT_GAMEPAD_LEFT_SHOULDER    0x0100
+#define XINPUT_GAMEPAD_RIGHT_SHOULDER   0x0200
+#define XINPUT_GAMEPAD_A                0x1000
+#define XINPUT_GAMEPAD_B                0x2000
+#define XINPUT_GAMEPAD_X                0x4000
+#define XINPUT_GAMEPAD_Y                0x8000
+
+typedef struct _XINPUT_GAMEPAD {
+    WORD wButtons;
+    BYTE bLeftTrigger;
+    BYTE bRightTrigger;
+    SHORT sThumbLX;
+    SHORT sThumbLY;
+    SHORT sThumbRX;
+    SHORT sThumbRY;
+} XINPUT_GAMEPAD, *PXINPUT_GAMEPAD;
+
+typedef struct _XINPUT_STATE {
+    DWORD dwPacketNumber;
+    XINPUT_GAMEPAD Gamepad;
+} XINPUT_STATE, *PXINPUT_STATE;
+
+typedef struct _XINPUT_VIBRATION {
+    WORD wLeftMotorSpeed;
+    WORD wRightMotorSpeed;
+} XINPUT_VIBRATION, *PXINPUT_VIBRATION;
+
+DWORD WINAPI (*XInputGetState)(DWORD, XINPUT_STATE*) = NULL;
+DWORD WINAPI (*XInputSetState)(DWORD, XINPUT_VIBRATION*) = NULL;
+
+HMODULE xinput_dll = NULL;
+///////////////////////////////////////////////////////////////////////////////
+//////// XInput.h - end
+///////////////////////////////////////////////////////////////////////////////
+
+
 static const char* win_errormsg(void)
 {
 	int err;
@@ -116,6 +163,7 @@ static void sys_input(void)
 {
  	DWORD result;
  	XINPUT_STATE state;
+	if(xinput_dll == NULL)return;
 
 	for(int i=0; i<4; i++)
 	{
@@ -386,6 +434,19 @@ static void win_init(void)
 		sys_dpi = (float)dpi_x / 96.0;
 	}
 
+	xinput_dll = LoadLibrary("XINPUT1_3.dll");
+	if(xinput_dll == NULL)
+	{
+		log_warning("XInput not found (XINPUT1_3.dll)");
+		log_warning("XInput, a part of DirectX, is needed for Xbox360 Controller support");
+		log_warning("See: https://www.microsoft.com/en-us/download/details.aspx?id=35");
+	}
+	else
+	{
+		XInputGetState = (DWORD WINAPI (*)(DWORD, XINPUT_STATE*))GetProcAddress(xinput_dll, "XInputGetState");
+		XInputSetState = (DWORD WINAPI (*)(DWORD, XINPUT_VIBRATION*))GetProcAddress(xinput_dll, "XInputSetState");
+	}
+
 	WNDCLASSEX wc;
 	wc.cbSize	= sizeof(WNDCLASSEX);
 	wc.style	= CS_OWNDC;
@@ -425,6 +486,14 @@ static void win_end(void)
 	if(fullscreen)ShowCursor(TRUE);
 	DestroyWindow(hWnd);
 	UnregisterClass(winClassName, hInst);
+	if(xinput_dll != NULL)
+	{
+		XInputGetState = NULL;
+		XInputSetState = NULL;
+		FreeLibrary(xinput_dll);
+		xinput_dll = NULL;
+	}
+
 }
 
 static void handle_events(void)

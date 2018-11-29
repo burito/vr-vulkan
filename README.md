@@ -77,7 +77,6 @@ This is not required to build, this is just how I procured the libraries present
     cp small-matrix-inverse/invert4x4_sse.h $DEST/include
     # perform needed modifications
     sed -i 's/static inline void invert4x4/void invert4x4/' $DEST/include/invert4x4_sse.h
-    sed -i 's/struct HmdVector2_t & vCenter/struct HmdVector2_t * vCenter/' $DEST/include/openvr_capi.h
     # return to where we started
     cd $DEST/..
 

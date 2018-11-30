@@ -434,8 +434,8 @@ int vk_framebuffer(int x, int y, struct VULKAN_FRAMEBUFFER *fb)
 		vk.vr.renderpass,				// VkRenderPass                renderPass;
 		2,						// uint32_t                    attachmentCount;
 		attachments,					// const VkImageView*          pAttachments;
-		x,						// uint32_t                    width;
-		y,						// uint32_t                    height;
+		fb->width,					// uint32_t                    width;
+		fb->height,					// uint32_t                    height;
 		1						// uint32_t                    layers;
 	};
 
@@ -1852,8 +1852,8 @@ void vulkan_vr_init(void)
 		VK_FALSE							// VkBool32                                   primitiveRestartEnable;		
 	};
 
-	VkViewport viewport = {0.0f,0.0f,(float)vid_width,(float)vid_height,0.0f,1.0f};
-	VkRect2D scissor = {{0,0},{vid_width,vid_height}};
+	VkViewport viewport = {0.0f,0.0f,(float)vk.vr.width,(float)vk.vr.height,0.0f,1.0f};
+	VkRect2D scissor = {{0,0},{vk.vr.width,vk.vr.height}};
 	VkPipelineViewportStateCreateInfo viewport_state_crinf = {
 		VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,	// VkStructureType                       sType;
 		NULL,							// const void*                           pNext;
@@ -2008,7 +2008,6 @@ void vulkan_vr_init(void)
 //		goto VK_INIT_PIPELINE;
 	}
 
-
 	vk_framebuffer( vk.vr.width, vk.vr.height, &vk.vr.fb_left);
 	vk_framebuffer( vk.vr.width, vk.vr.height, &vk.vr.fb_right);
 
@@ -2159,7 +2158,7 @@ void vk_commandbuffers_vr(struct VULKAN_FRAMEBUFFER *fb)
 	VkRenderPassBeginInfo render_pass_begin_info = {
 		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType        sType;
 		NULL,						// const void*            pNext;
-		vk.vr.renderpass,					// VkRenderPass           renderPass;
+		vk.vr.renderpass,				// VkRenderPass           renderPass;
 		fb->framebuffer,				// VkFramebuffer          framebuffer;
 		{{0,0},{fb->width,fb->height}},			// VkRect2D               renderArea;
 		2,						// uint32_t               clearValueCount;

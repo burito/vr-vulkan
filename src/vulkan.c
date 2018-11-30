@@ -168,7 +168,7 @@ VkResult vk_surface(void)
 VkResult vk_buffer(VkBufferUsageFlags usage, VkMemoryPropertyFlags flags, struct VULKAN_BUFFER *x, VkDeviceSize size, void *data)
 {
 
-	log_debug("vk_buffer( %d )", (int)size);
+	log_trace("vk_buffer( %d )", (int)size);
 
 	VkResult result;
 	VkBufferCreateInfo buffer_crinf = {
@@ -393,6 +393,10 @@ void vk_imagebuffer_end(struct VULKAN_IMAGEBUFFER *x)
 
 int vk_framebuffer(int x, int y, struct VULKAN_FRAMEBUFFER *fb)
 {
+	fb->width = x;
+	fb->height = y;
+
+
 	VkResult result;
 
 	result = vk_imagebuffer(x, y,
@@ -429,7 +433,7 @@ int vk_framebuffer(int x, int y, struct VULKAN_FRAMEBUFFER *fb)
 		0,						// VkFramebufferCreateFlags    flags;
 		vk.vr.renderpass,				// VkRenderPass                renderPass;
 		2,						// uint32_t                    attachmentCount;
-		&attachments[0],				// const VkImageView*          pAttachments;
+		attachments,					// const VkImageView*          pAttachments;
 		x,						// uint32_t                    width;
 		y,						// uint32_t                    height;
 		1						// uint32_t                    layers;
@@ -482,6 +486,7 @@ void vk_pipeline_end(struct VULKAN_PIPELINE *vp)
 
 void vk_pipeline(struct VULKAN_PIPELINE *vp, int reinit_pipeline)
 {
+
 	VkResult result;
 	// create the shaders
 	if( !reinit_pipeline )
@@ -889,13 +894,13 @@ int vulkan_init(void)
 
 	for(int i=0; i<property_count; i++)
 	{
-		log_info("extension_properties[%d] = %s", i, extension_properties[i].extensionName);
+		log_trace("extension_properties[%d] = %s", i, extension_properties[i].extensionName);
 	}
 	free(extension_properties);
 
 	for(int i=0; i<vulkan_instance_extension_count; i++)
 	{
-		log_info("requested_extension[%d] = %s", i, vulkan_instance_extension_strings[i]);
+		log_trace("requested_extension[%d] = %s", i, vulkan_instance_extension_strings[i]);
 	}
 
 
@@ -984,9 +989,9 @@ int vulkan_init(void)
 	vk.desired_queuefamily = UINT32_MAX;
 	for(int i=0; i<queuefamily_count; i++)
 	{
-		log_info("queuefamily[%d].flags = %d", i,
+		log_trace("queuefamily[%d].flags = %d", i,
 			queuefamily_properties[i].queueFlags);
-		vulkan_queueflags(queuefamily_properties[i].queueFlags);
+//		vulkan_queueflags(queuefamily_properties[i].queueFlags);
 
 		VkQueueFlags wanted = 
 			VK_QUEUE_GRAPHICS_BIT |
@@ -1046,7 +1051,7 @@ int vulkan_init(void)
 	}
 
 	vkGetDeviceQueue(vk.device, vk.desired_queuefamily, 0, &vk.queue);
-	log_debug("vkGetDeviceQueue");
+	log_trace("vkGetDeviceQueue");
 
 
 	// get the surface capabilities
@@ -1064,7 +1069,7 @@ int vulkan_init(void)
 	{
 		log_warning("vkGetPhysicalDeviceSurfaceSupportKHR = %s", vulkan_result(result));
 	}
-	log_info("vkGetPhysicalDeviceSurfaceSupportKHR(%d) = %s", vk.desired_queuefamily, present_supported?"VK_TRUE":"VK_FALSE");
+	log_trace("vkGetPhysicalDeviceSurfaceSupportKHR(%d) = %s", vk.desired_queuefamily, present_supported?"VK_TRUE":"VK_FALSE");
 	
 	uint32_t surface_format_count = 0;
 	result = vkGetPhysicalDeviceSurfaceFormatsKHR(vk.physical_device, vk.surface, &surface_format_count, NULL);
@@ -1072,7 +1077,7 @@ int vulkan_init(void)
 	{
 		log_warning("vkGetPhysicalDeviceSurfaceFormatsKHR(NULL) = %s", vulkan_result(result));
 	}
-	log_info("vkGetPhysicalDeviceSurfaceFormatsKHR = %d", surface_format_count);
+	log_trace("vkGetPhysicalDeviceSurfaceFormatsKHR = %d", surface_format_count);
 
 	VkSurfaceFormatKHR * surface_formats = malloc(sizeof(VkSurfaceFormatKHR) * surface_format_count);
 	if( surface_formats == NULL )
@@ -1090,7 +1095,7 @@ int vulkan_init(void)
 	int desired_format = -1;
 	for(int i = 0; i< surface_format_count; i++)
 	{
-		log_info( "cs=%s, f=%s", vulkan_colorspace(surface_formats[i].colorSpace),
+		log_trace( "cs=%s, f=%s", vulkan_colorspace(surface_formats[i].colorSpace),
 						vulkan_format(surface_formats[i].format) );
 		switch( surface_formats[i].format ){
 		case VK_FORMAT_B8G8R8A8_SRGB:
@@ -1140,10 +1145,9 @@ int vulkan_init(void)
 	free(vkpd);	// don't need this anymore
 	vkpd = NULL;
 
-	log_info("present_mode_count = %d", present_mode_count);
 	for(int i=0; i<present_mode_count; i++)
 	{
-		log_info("%d:%s", i, vulkan_presentmode(present_modes[i]));
+		log_trace("%d:%s", i, vulkan_presentmode(present_modes[i]));
 	}
 
 	// TODO: make this logic better
@@ -1362,7 +1366,7 @@ int vulkan_init(void)
 
 	vk.current_image = vk.display_buffer_count - 1;
 	vk.finished_initialising = 1;
-	log_debug("Vulkan Initialisation complete");
+	log_trace("Vulkan Initialisation complete");
 	return 0;
 
 

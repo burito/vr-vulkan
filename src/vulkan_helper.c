@@ -601,15 +601,15 @@ char* vulkan_result(VkResult result)
 void vulkan_queueflags(VkQueueFlags flags)
 {
 	if( flags & VK_QUEUE_GRAPHICS_BIT )
-		log_info("VK_QUEUE_GRAPHICS_BIT");
+		log_trace("VK_QUEUE_GRAPHICS_BIT");
 	if( flags & VK_QUEUE_COMPUTE_BIT )
-		log_info("VK_QUEUE_COMPUTE_BIT");
+		log_trace("VK_QUEUE_COMPUTE_BIT");
 	if( flags & VK_QUEUE_TRANSFER_BIT )
-		log_info("VK_QUEUE_TRANSFER_BIT");
+		log_trace("VK_QUEUE_TRANSFER_BIT");
 	if( flags & VK_QUEUE_SPARSE_BINDING_BIT )
-		log_info("VK_QUEUE_SPARSE_BINDING_BIT");
+		log_trace("VK_QUEUE_SPARSE_BINDING_BIT");
 	if( flags & VK_QUEUE_PROTECTED_BIT )
-		log_info("VK_QUEUE_PROTECTED_BIT");
+		log_trace("VK_QUEUE_PROTECTED_BIT");
 }
 
 

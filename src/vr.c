@@ -361,7 +361,7 @@ int vr_init(void)
 			return 1;
 		}
 		OVRC->GetVulkanInstanceExtensionsRequired( vulkan_instance_extension_buffer, buffer_size );
-		log_info("GetVulkanInstanceExtensionsRequired = %s", vulkan_instance_extension_buffer);
+		log_debug("GetVulkanInstanceExtensionsRequired = %s", vulkan_instance_extension_buffer);
 
 		char delim[] = " ";
 		char *saveptr = NULL;
@@ -386,7 +386,7 @@ int vr_init(void)
 		}
 
 		OVRC->GetVulkanDeviceExtensionsRequired(vk.physical_device, vulkan_physical_device_extension_buffer, buffer_size );
-		log_info("GetVulkanDeviceExtensionsRequired = %s", vulkan_physical_device_extension_buffer);
+		log_debug("GetVulkanDeviceExtensionsRequired = %s", vulkan_physical_device_extension_buffer);
 
 		char delim[] = " ";
 		char *saveptr = NULL;

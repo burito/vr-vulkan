@@ -33,9 +33,12 @@ freely, subject to the following restrictions:
 #include "3dmaths.h"
 #include "mesh.h"
 #include "text.h"
-#include "log.h"
 #include "vulkan.h"
 #include "vulkan_helper.h"
+
+#define LOG_NO_DEBUG
+#include "log.h"
+
 
 #define BUF_LEN 1024
 

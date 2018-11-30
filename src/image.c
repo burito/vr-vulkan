@@ -33,6 +33,8 @@ freely, subject to the following restrictions:
 
 #include "image.h"
 #include "text.h"
+
+#define LOG_NO_TRACE
 #include "log.h"
 
 
@@ -42,7 +44,7 @@ extern VkColorSpaceKHR color_space;
 static void img_vulkan_init(IMG *img)
 {
 
-	log_debug("img_vulkan_init()");
+	log_trace("img_vulkan_init()");
 	VkResult result;
 	struct VULKAN_BUFFER staging;
 

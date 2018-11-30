@@ -35,10 +35,10 @@ Executing
 Run it however you normally would. On Mac, if you want to run the naked executable (the one without the icon), be aware that the keyboard will not work. That's a feature of MacOS.
 
 ### Linux
-    ~/.steam/steam/ubuntu12_32/steam-runtime/run.sh ./vulkan
+    ./vulkan
     # ~~or~~
-    LD_LIBRARY_PATH=. ./vulkan
-The latter will use the OpenVR library packaged in this repository, which should be enough for it to load, but I don't think OpenVR will function correctly, or at all.
+    ~/.steam/steam/ubuntu12_32/steam-runtime/run.sh ./vulkan
+The latter is the canonical way to run things in the Steam Environment. Or at least it was... seems to work great now without it. It is using the libopenvr_api.so in the deps/lin directory.
 
 ### All Platforms
 

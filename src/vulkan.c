@@ -690,7 +690,7 @@ void vk_pipeline(struct VULKAN_PIPELINE *vp, int reinit_pipeline)
 		VK_FALSE,							// VkBool32                                   rasterizerDiscardEnable;
 		VK_POLYGON_MODE_FILL,						// VkPolygonMode                              polygonMode;
 		VK_CULL_MODE_BACK_BIT,						// VkCullModeFlags                            cullMode;
-		VK_FRONT_FACE_CLOCKWISE,					// VkFrontFace                                frontFace;
+		VK_FRONT_FACE_COUNTER_CLOCKWISE,				// VkFrontFace                                frontFace;
 		VK_FALSE,							// VkBool32                                   depthBiasEnable;
 		0.0f,								// float                                      depthBiasConstantFactor;
 		0.0f,								// float                                      depthBiasClamp;
@@ -1873,7 +1873,7 @@ void vulkan_vr_init(void)
 		VK_FALSE,							// VkBool32                                   rasterizerDiscardEnable;
 		VK_POLYGON_MODE_FILL,						// VkPolygonMode                              polygonMode;
 		VK_CULL_MODE_BACK_BIT,						// VkCullModeFlags                            cullMode;
-		VK_FRONT_FACE_CLOCKWISE,					// VkFrontFace                                frontFace;
+		VK_FRONT_FACE_COUNTER_CLOCKWISE,					// VkFrontFace                                frontFace;
 		VK_FALSE,							// VkBool32                                   depthBiasEnable;
 		0.0f,								// float                                      depthBiasConstantFactor;
 		0.0f,								// float                                      depthBiasClamp;

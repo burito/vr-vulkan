@@ -19,12 +19,9 @@ out gl_PerVertex
 	vec4 gl_Position;
 };
 
-void main() {
-
-//	outNormal = inNormal;
+void main()
+{
 	outUV = inUV;
-//	gl_Position = vec4( inPos.x, inPos.yz, 1.0 );
-
 	outNormal = mat3(ubo.modelview) * inNormal;
 	gl_Position = ubo.projection * ubo.modelview * vec4( inPos, 1.0 );
 	gl_Position.y = -gl_Position.y;

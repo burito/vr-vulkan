@@ -375,6 +375,9 @@ static LONG WINAPI wProc(HWND hWndProc, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	return DefWindowProc(hWndProc, uMsg, wParam, lParam);
 }
 
+
+// this is Google Chrome style window fullscreen
+// https://stackoverflow.com/questions/2382464/win32-full-screen-and-hiding-taskbar
 int win_style;
 int win_exstyle;
 BOOL win_maximized;
@@ -384,6 +387,10 @@ static void win_toggle(void)
 	if(!fullscreen)
 	{
 		win_maximized = IsZoomed(hWnd);
+		if(win_maximized)
+		{
+			SendMessage(hWnd, WM_SYSCOMMAND, SC_RESTORE, 0);
+		}
 		GetWindowRect(hWnd, &win_rect);
 		win_width = win_rect.right - win_rect.left;
 		win_height = win_rect.bottom - win_rect.top;
@@ -396,7 +403,6 @@ static void win_toggle(void)
 		MONITORINFO monitor_info;
 		monitor_info.cbSize = sizeof(monitor_info);
 		GetMonitorInfo(MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST), &monitor_info);
-
 		SetWindowPos(hWnd, NULL,
 			monitor_info.rcMonitor.left,
 			monitor_info.rcMonitor.top,
@@ -417,7 +423,9 @@ static void win_toggle(void)
 			SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED
 		);
 		if(win_maximized)
+		{
 			SendMessage(hWnd, WM_SYSCOMMAND, SC_MAXIMIZE, 0);
+		}
 	}
 
 	fullscreen_toggle = 0;

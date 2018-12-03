@@ -375,39 +375,57 @@ static LONG WINAPI wProc(HWND hWndProc, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	return DefWindowProc(hWndProc, uMsg, wParam, lParam);
 }
 
-
+int win_style;
+int win_exstyle;
+BOOL win_maximized;
+RECT win_rect;
 static void win_toggle(void)
 {
-	DestroyWindow(hWnd);
-
 	if(!fullscreen)
 	{
-		win_width = vid_width;
-		win_height = vid_height;
-		vid_width = GetSystemMetrics(SM_CXSCREEN);
-		vid_height = GetSystemMetrics(SM_CYSCREEN);
+		win_maximized = IsZoomed(hWnd);
+		GetWindowRect(hWnd, &win_rect);
+		win_width = win_rect.right - win_rect.left;
+		win_height = win_rect.bottom - win_rect.top;
+		win_style = GetWindowLongPtr(hWnd, GWL_STYLE);
+		win_exstyle = GetWindowLongPtr(hWnd, GWL_EXSTYLE);
+		SetWindowLongPtr(hWnd, GWL_STYLE, win_style & ~(WS_CAPTION | WS_THICKFRAME) );
+		SetWindowLongPtr(hWnd, GWL_EXSTYLE, win_exstyle &
+			~(WS_EX_DLGMODALFRAME | WS_EX_WINDOWEDGE | WS_EX_CLIENTEDGE | WS_EX_STATICEDGE) );
+		
+		MONITORINFO monitor_info;
+		monitor_info.cbSize = sizeof(monitor_info);
+		GetMonitorInfo(MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST), &monitor_info);
 
-		hWnd = CreateWindowEx(0, "Kittens", "Kittens",
-		WS_POPUP, //|WS_CLIPSIBLINGS|WS_CLIPCHILDREN,
-		0,0,vid_width,vid_height,NULL,NULL,hInst,NULL);
-		ShowCursor(FALSE);
+		SetWindowPos(hWnd, NULL,
+			monitor_info.rcMonitor.left,
+			monitor_info.rcMonitor.top,
+			monitor_info.rcMonitor.right,
+			monitor_info.rcMonitor.bottom,
+			SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED
+		);
 	}
 	else
 	{
-		vid_width = win_width;
-		vid_height = win_height;
-		hWnd = CreateWindowEx(0, "Kittens", "Kittens",
-		WS_TILEDWINDOW, //|WS_CLIPSIBLINGS|WS_CLIPCHILDREN,
-		50,50,vid_width,vid_height,NULL,NULL,hInst,NULL);
-		ShowCursor(TRUE);
+		SetWindowLongPtr(hWnd, GWL_STYLE, win_style);
+		SetWindowLongPtr(hWnd, GWL_EXSTYLE, win_exstyle);
+		SetWindowPos(hWnd, NULL,
+			win_rect.left,
+			win_rect.top,
+			win_rect.right - win_rect.left,
+			win_rect.bottom - win_rect.top,
+			SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED
+		);
+		if(win_maximized)
+			SendMessage(hWnd, WM_SYSCOMMAND, SC_MAXIMIZE, 0);
 	}
 
 	fullscreen_toggle = 0;
 	fullscreen = !fullscreen;
 
-	// TODO: tell vulkan about window change?
 	ShowWindow(hWnd, CmdShow);
 	UpdateWindow(hWnd);
+	vulkan_resize();
 }
 
 

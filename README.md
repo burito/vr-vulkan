@@ -119,9 +119,6 @@ Credits
 	* 1.1.82.1
 * ```deps/lin/*``` - LunarG Vulkan SDK for Linux
 	* 1.1.82.1
-* ```src/macos.m```
-	* based on the work of Dmytro Ivanov
-	* https://github.com/jimon/osx_app_in_plain_c
 * ```data/stanford-bunny.obj```
     * The Stanford Bunny.
     * http://graphics.stanford.edu/data/3Dscanrep/

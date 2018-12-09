@@ -107,9 +107,9 @@ void main_loop(void)
 	}
 
 
-	if(keys[KEY_F12])
+	if(keys[KEY_F10])
 	{
-		keys[KEY_F12] = 0;
+		keys[KEY_F10] = 0;
 		log_info("VR %s", (vr_using?"Shutdown":"Startup") );
 		if(!vr_using)vr_init();
 		else vr_end();

@@ -59,13 +59,13 @@ void render(mat4x4 view, mat4x4 projection, struct MESH_UNIFORM_BUFFER *dest);
 
 int vr_using = 0;
 
-intptr_t VR_InitInternal( EVRInitError *peError, EVRApplicationType eType );
-void VR_ShutdownInternal();
-int VR_IsHmdPresent();
-intptr_t VR_GetGenericInterface( const char *pchInterfaceVersion, EVRInitError *peError );
-int VR_IsRuntimeInstalled();
-const char * VR_GetVRInitErrorAsSymbol( EVRInitError error );
-const char * VR_GetVRInitErrorAsEnglishDescription( EVRInitError error );
+S_API intptr_t VR_InitInternal( EVRInitError *peError, EVRApplicationType eType );
+S_API void VR_ShutdownInternal();
+S_API bool VR_IsHmdPresent();
+S_API intptr_t VR_GetGenericInterface( const char *pchInterfaceVersion, EVRInitError *peError );
+S_API bool VR_IsRuntimeInstalled();
+S_API const char * VR_GetVRInitErrorAsSymbol( EVRInitError error );
+S_API const char * VR_GetVRInitErrorAsEnglishDescription( EVRInitError error );
 
 
 struct VR_IVRSystem_FnTable * OVR = NULL;
@@ -374,7 +374,7 @@ int vr_init(void)
 			new_ext = strtok_r( NULL, delim, &saveptr);
 		}
 	}
-
+//#ifndef __APPLE__
 	buffer_size = OVRC->GetVulkanDeviceExtensionsRequired(vk.physical_device, NULL, 0 );
 	if(buffer_size > 0)
 	{
@@ -399,7 +399,7 @@ int vr_init(void)
 			new_ext = strtok_r( NULL, delim, &saveptr);
 		}
 	}
-
+//#endif
 	// Get hmd position matrices
 	hmd_eye_calc(EVREye_Eye_Left, &eye_left, &eye_left_proj);
 	hmd_eye_calc(EVREye_Eye_Right, &eye_right, &eye_right_proj);
@@ -422,10 +422,11 @@ int vr_init(void)
 		vk.vr.height = m_nRenderHeight;
 	}
 
+//#ifndef __APPLE__
 	vulkan_end();
 	// to re-init with requested extensions
 	vulkan_init();
-
+//#endif
 	vulkan_vr_init();
 
 	vr_using = 1;

@@ -52,6 +52,11 @@ If you run it from a terminal, there will be lots of output. It should look some
 	...
 And so on and so forth.
 
+Usage
+-----
+ * F9 - restart window
+ * F10 - toggle VR
+ * F11 - toggle fullscreen
 
 Libraries
 ---------

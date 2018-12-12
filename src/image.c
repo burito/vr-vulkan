@@ -48,7 +48,11 @@ static void img_vulkan_init(IMG *img)
 	VkResult result;
 	struct VULKAN_BUFFER staging;
 
+	img->channels = 4;
+
 	VkDeviceSize buffer_size = img->x * img->y * ( img->channels );
+
+	VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
 
 	result = vk_buffer( VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
@@ -63,7 +67,7 @@ static void img_vulkan_init(IMG *img)
 		NULL,					// const void*              pNext;
 		0,					// VkImageCreateFlags       flags;
 		VK_IMAGE_TYPE_2D,			// VkImageType              imageType;
-		VK_FORMAT_R8G8B8A8_SRGB,				// VkFormat                 format;
+		format,					// VkFormat                 format;
 		{img->x, img->y, 1},			// VkExtent3D               extent;
 		1,					// uint32_t                 mipLevels;
 		1,					// uint32_t                 arrayLayers;
@@ -230,7 +234,7 @@ static void img_vulkan_init(IMG *img)
 		0,						// VkImageViewCreateFlags     flags;
 		img->vk.image,					// VkImage                    image;
 		VK_IMAGE_VIEW_TYPE_2D,				// VkImageViewType            viewType;
-		VK_FORMAT_R8G8B8A8_SRGB,					// VkFormat                   format;
+		format,						// VkFormat                   format;
 		{	VK_COMPONENT_SWIZZLE_IDENTITY,		// VkComponentMapping         components;
 			VK_COMPONENT_SWIZZLE_IDENTITY,
 			VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -271,10 +275,34 @@ IMG* img_load(const char * filename)
 	if(!i)return 0;
 	memset(i, 0, size);
 	i->name = hcopy(filename);
-	i->buf = stbi_load(filename, &i->x, &i->y, &i->channels, 0);
+	i->buf = stbi_load(filename, &i->x, &i->y, &i->channels, 4);
+	i->channels = 4;
 	img_vulkan_init(i);
 	return i;
 }
+
+
+/*
+// TODO: at some point, should query available formats, and find best matches for ones I'm interested in
+	for(int i = 1; i< 183; i++)
+	{
+		format = i;
+		VkImageFormatProperties img_format_properties;
+		result = vkGetPhysicalDeviceImageFormatProperties(vk.physical_device, format,
+			VK_IMAGE_TYPE_2D,
+			VK_IMAGE_TILING_OPTIMAL,
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+			0,
+			&img_format_properties
+			);
+		if(result != VK_ERROR_FORMAT_NOT_SUPPORTED)
+		{
+			log_warning("vkGetPhysicalDeviceImageFormatProperties = %s - %s", vulkan_result(result), vulkan_format(format));
+		}
+
+	}
+	log_info("done!");
+*/
 
 
 #ifdef ISTANDALONE

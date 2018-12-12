@@ -92,21 +92,21 @@ typedef struct HmdMatrix44_t
 #endif
 
 void mat4x4_print(mat4x4 m);
-mat4x4 mat4x4_invert(mat4x4 m);
-mat4x4 mat4x4_transpose(mat4x4 m);
-mat4x4 mat4x4_identity(void);
-mat4x4 mat4x4_rot_x(float t);
-mat4x4 mat4x4_rot_y(float t);
-mat4x4 mat4x4_rot_z(float t);
-mat4x4 mat4x4_translate(vect v);
-mat4x4 mat4x4_translate_float(float x, float y, float z);
-mat4x4 mat4x4_perspective(float near, float far, float width, float height);
-mat4x4 mat4x4_orthographic(float near, float far, float width, float height);
+mat4x4 mat4x4_invert(mat4x4 m) __attribute__((const));
+mat4x4 mat4x4_transpose(mat4x4 m) __attribute__((const));
+mat4x4 mat4x4_identity(void) __attribute__((const));
+mat4x4 mat4x4_rot_x(float t) __attribute__((const));
+mat4x4 mat4x4_rot_y(float t) __attribute__((const));
+mat4x4 mat4x4_rot_z(float t) __attribute__((const));
+mat4x4 mat4x4_translate(vect v) __attribute__((const));
+mat4x4 mat4x4_translate_float(float x, float y, float z) __attribute__((const));
+mat4x4 mat4x4_perspective(float near, float far, float width, float height) __attribute__((const));
+mat4x4 mat4x4_orthographic(float near, float far, float width, float height) __attribute__((const));
 
 
-vect vect_norm(vect v);
-float vect_dot(vect l, vect r);
-vect vect_cross(vect l, vect r);
+vect vect_norm(vect v) __attribute__((const));
+float vect_dot(vect l, vect r) __attribute__((const));
+vect vect_cross(vect l, vect r) __attribute__((const));
 
 
 /*
@@ -114,40 +114,40 @@ The following functions are to be called via the
 _Generic() macro's mag(), max(), mov(), mul(), add() and sub()
 */
 
-float coord_mag(coord c);
-float vect_mag(vect v);
+float coord_mag(coord c) __attribute__((const));
+float vect_mag(vect v) __attribute__((const));
 
-float coord_max(coord c);
-float vect_max(vect v);
+float coord_max(coord c) __attribute__((const));
+float vect_max(vect v) __attribute__((const));
 
-mat4x4 mat4x4_mov_HmdMatrix34(HmdMatrix34_t x);
-mat4x4 mat4x4_mov_HmdMatrix44(HmdMatrix44_t x);
+mat4x4 mat4x4_mov_HmdMatrix34(HmdMatrix34_t x) __attribute__((const));
+mat4x4 mat4x4_mov_HmdMatrix44(HmdMatrix44_t x) __attribute__((const));
 
-mat4x4 mat4x4_mul_mat4x4(mat4x4 l, mat4x4 r);
-vect mat4x4_mul_vect(mat4x4 l, vect r);
-mat4x4 mat4x4_mul_float(mat4x4 l, float r);
-mat4x4 mat4x4_add_mat4x4(mat4x4 l, mat4x4 r);
-mat4x4 mat4x4_add_float(mat4x4 l, float r);
-mat4x4 mat4x4_sub_mat4x4(mat4x4 l, mat4x4 r);
+mat4x4 mat4x4_mul_mat4x4(mat4x4 l, mat4x4 r) __attribute__((const));
+vect mat4x4_mul_vect(mat4x4 l, vect r) __attribute__((const));
+mat4x4 mat4x4_mul_float(mat4x4 l, float r) __attribute__((const));
+mat4x4 mat4x4_add_mat4x4(mat4x4 l, mat4x4 r) __attribute__((const));
+mat4x4 mat4x4_add_float(mat4x4 l, float r) __attribute__((const));
+mat4x4 mat4x4_sub_mat4x4(mat4x4 l, mat4x4 r) __attribute__((const));
 
-vect vect_mul_vect(vect l, vect r);
-vect vect_mul_float(vect l, float r);
-vect vect_div_vect(vect l, vect r);
-vect vect_div_float(vect l, float r);
-vect vect_add_vect(vect l, vect r);
-vect vect_add_float(vect l, float r);
-vect vect_sub_vect(vect l, vect r);
+vect vect_mul_vect(vect l, vect r) __attribute__((const));
+vect vect_mul_float(vect l, float r) __attribute__((const));
+vect vect_div_vect(vect l, vect r) __attribute__((const));
+vect vect_div_float(vect l, float r) __attribute__((const));
+vect vect_add_vect(vect l, vect r) __attribute__((const));
+vect vect_add_float(vect l, float r) __attribute__((const));
+vect vect_sub_vect(vect l, vect r) __attribute__((const));
 
-float float_mul(float l, float r);
-float float_add(float l, float r);
-float float_sub_float(float l, float r);
-vect float_sub_vect(float l, vect r);
-float float_div_float(float l, float r);
+float float_mul(float l, float r) __attribute__((const));
+float float_add(float l, float r) __attribute__((const));
+float float_sub_float(float l, float r) __attribute__((const));
+vect float_sub_vect(float l, vect r) __attribute__((const));
+float float_div_float(float l, float r) __attribute__((const));
 
-int int_mul(int l, int r);
-int int_add(int l, int r);
-int int_sub(int l, int r);
-int int_div_int(int l, int r);
+int int_mul(int l, int r) __attribute__((const));
+int int_add(int l, int r) __attribute__((const));
+int int_sub(int l, int r) __attribute__((const));
+int int_div_int(int l, int r) __attribute__((const));
 
 // returns the magnitude of a vector
 #define mag(X) _Generic(X, \

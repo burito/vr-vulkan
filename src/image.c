@@ -48,11 +48,17 @@ static void img_vulkan_init(IMG *img)
 	VkResult result;
 	struct VULKAN_BUFFER staging;
 
-	img->channels = 4;
-
 	VkDeviceSize buffer_size = img->x * img->y * ( img->channels );
+	VkFormat format;
 
-	VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
+	switch(img->channels){
+	case 1: format = VK_FORMAT_R8_UNORM; break;
+	case 2: format = VK_FORMAT_R8G8_UNORM; break;
+	case 4: format = VK_FORMAT_R8G8B8A8_SRGB; break;
+	default:
+		log_error("Unexpected channel count");
+		return;
+	}
 
 	result = vk_buffer( VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
@@ -275,8 +281,11 @@ IMG* img_load(const char * filename)
 	if(!i)return 0;
 	memset(i, 0, size);
 	i->name = hcopy(filename);
-	i->buf = stbi_load(filename, &i->x, &i->y, &i->channels, 4);
-	i->channels = 4;
+	stbi_info(filename,  &i->x, &i->y, &i->channels);
+	int wanted = i->channels;
+	if(wanted == 3)wanted = 4;
+	i->buf = stbi_load(filename, &i->x, &i->y, &i->channels, wanted);
+	i->channels = wanted;
 	img_vulkan_init(i);
 	return i;
 }

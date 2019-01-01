@@ -4,7 +4,7 @@ UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
 # MacOS
 BUILD_DIR = $(MAC_DIR)
-GLSLANG = deps/mac/glslangValidator
+GLSLANG = deps/vulkan-lib/mac/glslangValidator
 CC = clang -g
 default: vulkan.app
 
@@ -28,14 +28,14 @@ endif # ImageMagick check done!
 ifeq ($(UNAME), Linux)
 # Linux
 BUILD_DIR = $(LIN_DIR)
-GLSLANG = deps/lin/glslangValidator
+GLSLANG = deps/vulkan-lib/lin/glslangValidator
 CC = clang -g
 default: vulkan
 
 else
 # Windows
 BUILD_DIR = $(WIN_DIR)
-GLSLANG = deps/win/glslangValidator.exe
+GLSLANG = deps/vulkan-lib/win/glslangValidator.exe
 WINDRES = windres
 CC = gcc -g
 default: vulkan.exe
@@ -50,10 +50,10 @@ WIN_LIBS = -luser32 -lwinmm -lgdi32 -lshell32
 # use this line with gcc
 WIN_OBJS += c:/Windows/system32/vulkan-1.dll openvr_api.dll
 # use this line with clang/msvc
-#WIN_LIBS += -Ldeps/win -ldeps/openvr/lib/win64/openvr_api.lib -lvulkan-1
-LIN_LIBS = ./deps/openvr/bin/linux64/libopenvr_api.so -Ldeps/lin -lvulkan -lX11 -lm -lrt
+#WIN_LIBS += -ldeps/openvr/lib/win64/openvr_api.lib -ldeps/vulkan-lib/win/vulkan-1
+LIN_LIBS = ./deps/openvr/bin/linux64/libopenvr_api.so ./deps/vulkan-lib/lin/libvulkan.so -lX11 -lm -lrt
 #LIN_LIBS = -Ldeps/lin -lvulkan -lxcb -lm -lopenvr_api -lrt
-MAC_LIBS = -Ldeps/mac -lMoltenVK -Ldeps/openvr/bin/osx32 -lopenvr_api -framework CoreVideo -framework QuartzCore -rpath . -framework Cocoa
+MAC_LIBS = -Ldeps/vulkan-lib/mac -lvulkan -Ldeps/openvr/bin/osx32 -lopenvr_api -framework CoreVideo -framework QuartzCore -rpath . -framework Cocoa
 
 WIN_DIR = build/win
 LIN_DIR = build/lin

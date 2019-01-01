@@ -13,3 +13,6 @@
 [submodule "deps/small-matrix-inverse"]
 	path = deps/small-matrix-inverse
 	url = https://github.com/niswegmann/small-matrix-inverse
+[submodule "deps/vulkan-lib"]
+	path = deps/vulkan-lib
+	url = https://github.com/burito/vulkan-lib

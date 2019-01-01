@@ -5,7 +5,7 @@ This is a basic Vulkan Fragment Shader Window example, that compiles from the co
 
 Compiling (all OS's)
 --------------------
-    git clone git@github.com:burito/vr-vulkan
+    git clone --recurse-submodules git@github.com:burito/vr-vulkan
     cd vr-vulkan
     make
 
@@ -60,30 +60,9 @@ Usage
 
 Libraries
 ---------
-This is not required to build, this is just how I procured the libraries present in this repo. I run this periodically to update the things.
-
-    DEST=`pwd`/deps
-    cd ..
-    # grab the relevant repos
-    git clone git@github.com:KhronosGroup/Vulkan-Headers
-    git clone git@github.com:KhronosGroup/MoltenVK
-    git clone git@github.com:ValveSoftware/openvr
-    git clone git@github.com:nothings/stb
-    git clone git@github.com:niswegmann/small-matrix-inverse
-    # copy the files we want
-    cp -r Vulkan-Headers/include/vulkan $DEST/include/
-    cp MoltenVK/MoltenVK/MoltenVK/API/* $DEST/include/MoltenVK
-    cp openvr/headers/* $DEST/include/
-    cp openvr/bin/osx32/libopenvr_api.dylib $DEST/mac/
-    cp openvr/bin/win64/openvr* $DEST/win/
-    cp openvr/lib/win64/openvr* $DEST/win/
-    cp openvr/bin/linux64/libopenvr* $DEST/lin/
-    cp stb/stb_image.h $DEST/include/
-    cp small-matrix-inverse/invert4x4_sse.h $DEST/include
-    # perform needed modifications
-    sed -i 's/static inline void invert4x4/void invert4x4/' $DEST/include/invert4x4_sse.h
-    # return to where we started
-    cd $DEST/..
+They are all in submodules now.
+    git submodule init
+    git submodule update
 
 
 

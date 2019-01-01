@@ -1,4 +1,5 @@
 
+# *** Platform detection
 UNAME := $(shell uname)
 ifeq ($(UNAME), Darwin)
 # MacOS
@@ -38,7 +39,6 @@ GLSLANG = deps/win/glslangValidator.exe
 WINDRES = windres
 CC = gcc -g
 default: vulkan.exe
-$(shell	cp deps/win/openvr_api.dll .)
 endif
 endif
 
@@ -48,12 +48,12 @@ VPATH = src build deps
 
 WIN_LIBS = -luser32 -lwinmm -lgdi32 -lshell32
 # use this line with gcc
-WIN_LIBS += c:/Windows/system32/vulkan-1.dll openvr_api.dll 
+WIN_OBJS += c:/Windows/system32/vulkan-1.dll openvr_api.dll
 # use this line with clang/msvc
-#WIN_LIBS += -Ldeps/win -lopenvr_api.lib -lvulkan-1
-LIN_LIBS = ./deps/lin/libopenvr_api.so -Ldeps/lin -lvulkan -lX11 -lm -lrt
+#WIN_LIBS += -Ldeps/win -ldeps/openvr/lib/win64/openvr_api.lib -lvulkan-1
+LIN_LIBS = ./deps/openvr/bin/linux64/libopenvr_api.so -Ldeps/lin -lvulkan -lX11 -lm -lrt
 #LIN_LIBS = -Ldeps/lin -lvulkan -lxcb -lm -lopenvr_api -lrt
-MAC_LIBS = -Ldeps/mac -lMoltenVK -lopenvr_api -framework CoreVideo -framework QuartzCore -rpath . -framework Cocoa
+MAC_LIBS = -Ldeps/mac -lMoltenVK -Ldeps/openvr/bin/osx32 -lopenvr_api -framework CoreVideo -framework QuartzCore -rpath . -framework Cocoa
 
 WIN_DIR = build/win
 LIN_DIR = build/lin
@@ -63,9 +63,9 @@ _WIN_OBJS = win32.o win32.res $(OBJS)
 _LIN_OBJS = linux_xlib.o $(OBJS)
 _MAC_OBJS = macos.o $(OBJS)
 
-WIN_OBJS = $(patsubst %,$(WIN_DIR)/%,$(_WIN_OBJS))
-LIN_OBJS = $(patsubst %,$(LIN_DIR)/%,$(_LIN_OBJS))
-MAC_OBJS = $(patsubst %,$(MAC_DIR)/%,$(_MAC_OBJS))
+WIN_OBJS += $(patsubst %,$(WIN_DIR)/%,$(_WIN_OBJS))
+LIN_OBJS += $(patsubst %,$(LIN_DIR)/%,$(_LIN_OBJS))
+MAC_OBJS += $(patsubst %,$(MAC_DIR)/%,$(_MAC_OBJS))
 
 MAC_BUNDLE = vulkan
 
@@ -84,10 +84,10 @@ $(MAC_DIR)/%.o: %.m
 libMoltenVK.dylib: deps/mac/libMoltenVK.dylib
 	cp $< $@
 
-libopenvr_api.dylib: deps/mac/libopenvr_api.dylib
+libopenvr_api.dylib: deps/openvr/bin/mac32/libopenvr_api.dylib
 	cp $< $@
 
-openvr_api.dll: deps/win/openvr_api.dll
+openvr_api.dll: deps/openvr/bin/win64/openvr_api.dll
 	cp $< $@
 
 vulkan.exe: $(WIN_OBJS)

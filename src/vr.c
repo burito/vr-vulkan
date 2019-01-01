@@ -28,7 +28,7 @@ freely, subject to the following restrictions:
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <openvr_capi.h>
+#include <openvr/openvr_capi.h>
 
 #ifdef _WIN32
 #define strtok_r strtok_s

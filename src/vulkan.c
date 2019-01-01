@@ -585,7 +585,7 @@ void vk_pipeline(struct VULKAN_PIPELINE *vp, int reinit_pipeline)
 			vp->ubo_size		// VkDeviceSize    range;
 		};
 		VkDescriptorImageInfo desc_img_info = {
-			bunny->m[0].map_Kd->vk.sampler,		// VkSampler        sampler;
+			vk.sampler,		// VkSampler        sampler;
 			bunny->m[0].map_Kd->vk.imageview,	// VkImageView      imageView;
 			bunny->m[0].map_Kd->vk.image_layout	// VkImageLayout    imageLayout;
 		};
@@ -2042,7 +2042,7 @@ void vulkan_vr_init(void)
 		vk.mesh.ubo_size	// VkDeviceSize    range;
 	};
 	VkDescriptorImageInfo desc_img_info = {
-		bunny->m[0].map_Kd->vk.sampler,		// VkSampler        sampler;
+		vk.sampler,		// VkSampler        sampler;
 		bunny->m[0].map_Kd->vk.imageview,	// VkImageView      imageView;
 		bunny->m[0].map_Kd->vk.image_layout	// VkImageLayout    imageLayout;
 	};

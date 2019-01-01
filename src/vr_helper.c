@@ -22,7 +22,7 @@ freely, subject to the following restrictions:
 */
 
 #include <stdlib.h>
-#include <openvr_capi.h>
+#include <openvr/openvr_capi.h>
 
 char* vrc_error(EVRCompositorError x)
 {

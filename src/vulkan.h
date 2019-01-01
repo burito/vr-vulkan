@@ -54,7 +54,6 @@ struct VULKAN_TEXTURE {
 	VkImage image;
 	VkDeviceMemory memory;
 	VkImageView imageview;
-	VkSampler sampler;
 	VkImageLayout image_layout;
 };
 

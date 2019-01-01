@@ -53,7 +53,7 @@ WIN_OBJS += c\:/Windows/system32/vulkan-1.dll openvr_api.dll
 #WIN_LIBS += -ldeps/openvr/lib/win64/openvr_api.lib -ldeps/vulkan-lib/win/vulkan-1
 LIN_LIBS = ./deps/openvr/bin/linux64/libopenvr_api.so ./deps/vulkan-lib/lin/libvulkan.so -lX11 -lm -lrt
 #LIN_LIBS = -Ldeps/lin -lvulkan -lxcb -lm -lopenvr_api -lrt
-MAC_LIBS = -Ldeps/vulkan-lib/mac -lvulkan -Ldeps/openvr/bin/osx32 -lopenvr_api -framework CoreVideo -framework QuartzCore -rpath . -framework Cocoa
+MAC_LIBS = deps/vulkan-lib/mac/libMoltenVK.dylib deps/openvr/bin/osx32/libopenvr_api.dylib -framework CoreVideo -framework QuartzCore -rpath . -framework Cocoa
 
 WIN_DIR = build/win
 LIN_DIR = build/lin
@@ -81,7 +81,7 @@ $(MAC_DIR)/%.o: %.c
 $(MAC_DIR)/%.o: %.m
 	$(CC) $(CFLAGS) -c $< -o $@
 
-libMoltenVK.dylib: deps/mac/libMoltenVK.dylib
+libMoltenVK.dylib: deps/vulkan-lib/mac/libMoltenVK.dylib
 	cp $< $@
 
 libopenvr_api.dylib: deps/openvr/bin/osx32/libopenvr_api.dylib
@@ -169,7 +169,7 @@ $(MAC_CONTENTS)/Resources/AppIcon.icns: $(MAC_DIR)/AppIcon.icns
 	@mkdir -p $(MAC_CONTENTS)/Resources
 	cp $< $@
 
-$(MAC_CONTENTS)/Frameworks/libMoltenVK.dylib: deps/mac/libMoltenVK.dylib
+$(MAC_CONTENTS)/Frameworks/libMoltenVK.dylib: deps/vulkan-lib/mac/libMoltenVK.dylib
 	@mkdir -p $(MAC_CONTENTS)/Frameworks
 	cp $< $@
 

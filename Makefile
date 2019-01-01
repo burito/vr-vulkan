@@ -48,7 +48,7 @@ VPATH = src build deps
 
 WIN_LIBS = -luser32 -lwinmm -lgdi32 -lshell32
 # use this line with gcc
-WIN_OBJS += c:/Windows/system32/vulkan-1.dll openvr_api.dll
+WIN_OBJS += c\:/Windows/system32/vulkan-1.dll openvr_api.dll
 # use this line with clang/msvc
 #WIN_LIBS += -Ldeps/win -ldeps/openvr/lib/win64/openvr_api.lib -lvulkan-1
 LIN_LIBS = ./deps/openvr/bin/linux64/libopenvr_api.so -Ldeps/lin -lvulkan -lX11 -lm -lrt
@@ -84,7 +84,7 @@ $(MAC_DIR)/%.o: %.m
 libMoltenVK.dylib: deps/mac/libMoltenVK.dylib
 	cp $< $@
 
-libopenvr_api.dylib: deps/openvr/bin/mac32/libopenvr_api.dylib
+libopenvr_api.dylib: deps/openvr/bin/osx32/libopenvr_api.dylib
 	cp $< $@
 
 openvr_api.dll: deps/openvr/bin/win64/openvr_api.dll
@@ -173,7 +173,7 @@ $(MAC_CONTENTS)/Frameworks/libMoltenVK.dylib: deps/mac/libMoltenVK.dylib
 	@mkdir -p $(MAC_CONTENTS)/Frameworks
 	cp $< $@
 
-$(MAC_CONTENTS)/Frameworks/libopenvr_api.dylib: deps/mac/libopenvr_api.dylib
+$(MAC_CONTENTS)/Frameworks/libopenvr_api.dylib: deps/openvr/bin/osx32/libopenvr_api.dylib
 	@mkdir -p $(MAC_CONTENTS)/Frameworks
 	cp $< $@
 

@@ -26,7 +26,7 @@ freely, subject to the following restrictions:
 #include <X11/Xatom.h>
 #include <X11/extensions/XInput2.h>
 
-#include <linux/input.h>
+//#include <linux/input.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -36,6 +36,10 @@ freely, subject to the following restrictions:
 #include <dlfcn.h>
 #include <fcntl.h>
 #include <unistd.h>
+
+
+#include "log.h"
+#include "global.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 //////// Public Interface to the rest of the program
@@ -67,13 +71,18 @@ joystick joy[4];
 Display *display;
 Window window;
 
-#include "log.h"
-
 /*
 const unsigned char icon_buffer[] = { 0,1,0,0,0,0,0,0, 0,1,0,0,0,0,0,0,
 #include <icon.h>
 };
 */
+
+
+int fullscreen = 0;
+int fullscreen_toggle = 0;
+int win_width  = 0;	/* used for switching from fullscreen back to window */
+int win_height = 0;
+
 
 XSetWindowAttributes xwin_attr;
 //XVisualInfo *xvis;
@@ -405,7 +414,7 @@ static void x11_init(void)
 {
 	memset(keys, 0, KEYMAX);
 	memset(mouse, 0, 3);
-	memset(joy, 0, sizeof(joy));
+//	memset(joy, 0, sizeof(joy));
 //	memset(lin_joy, 0, sizeof(lin_joy));
 
 	display = XOpenDisplay(0);

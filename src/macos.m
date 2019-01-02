@@ -35,7 +35,7 @@ freely, subject to the following restrictions:
 #include <MoltenVK/mvk_vulkan.h>
 #define LOG_NO_DEBUG
 #include "log.h"
-
+#include "global.h"
 ///////////////////////////////////////////////////////////////////////////////
 //////// Public Interface to the rest of the program
 ///////////////////////////////////////////////////////////////////////////////
@@ -47,7 +47,7 @@ struct fvec2
 {
 	float x, y;
 };
-/*
+
 typedef struct joystick
 {
 	int connected;
@@ -607,7 +607,7 @@ static void mouse_move(NSEvent * theEvent)
 @end
 
 
-int main(int argc, const char * argv[])
+int main(int argc, char * argv[])
 {
 	log_init();
 	log_info("Platform    : MacOS");

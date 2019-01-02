@@ -16,3 +16,6 @@
 [submodule "deps/vulkan-lib"]
 	path = deps/vulkan-lib
 	url = https://github.com/burito/vulkan-lib
+[submodule "deps/models"]
+	path = deps/models
+	url = https://github.com/burito/models

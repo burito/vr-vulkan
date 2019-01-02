@@ -1354,8 +1354,8 @@ int vulkan_init(void)
 
 
 
-//	bunny = wf_load("data/stanford-bunny.obj");
-	bunny = wf_load("data/head.obj");
+//	bunny = wf_load("data/models/bunny/bunny.obj");
+	bunny = wf_load("data/models/lpshead/head.OBJ");
 
 	vk_pipeline_mesh(0);
 	vk_swapchain_init();

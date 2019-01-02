@@ -29,7 +29,7 @@ freely, subject to the following restrictions:
 #include "vulkan.h"
 
 #include "log.h"
-#include "main.h"
+#include "global.h"
 #include "text.h"
 #include "3dmaths.h"
 #include "mesh.h"
@@ -98,18 +98,18 @@ void main_loop(void)
 		killme=1;
 	}
 
-	if(keys[KEY_F9])
+	if(keys[KEY_F8])
 	{	// to test if I'm leaking
-		keys[KEY_F9] = 0;
+		keys[KEY_F8] = 0;
 		log_info("Restart Vulkan");
 		vulkan_end();
 		vulkan_init();
 	}
 
 
-	if(keys[KEY_F10])
+	if(keys[KEY_F9])
 	{
-		keys[KEY_F10] = 0;
+		keys[KEY_F9] = 0;
 		log_info("VR %s", (vr_using?"Shutdown":"Startup") );
 		if(!vr_using)vr_init();
 		else vr_end();

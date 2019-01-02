@@ -42,9 +42,9 @@ default: vulkan.exe
 endif
 endif
 
-OBJS = main.o log.o vr.o vr_helper.o vulkan.o vulkan_helper.o version.o 3dmaths.o text.o mesh.o image.o stb_image.o fast_atof.o
-CFLAGS = -std=c11 -Ideps/include -Ibuild
-VPATH = src build deps
+OBJS = main.o log.o global.o vr.o vr_helper.o vulkan.o vulkan_helper.o version.o 3dmaths.o text.o mesh.o image.o stb_image.o fast_atof.o
+CFLAGS = -std=c11 -Ideps/include -Ibuild -Ideps/dpb/src
+VPATH = src build deps deps/dpb/src
 
 WIN_LIBS = -luser32 -lwinmm -lgdi32 -lshell32
 # use this line with gcc

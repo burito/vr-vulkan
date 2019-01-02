@@ -49,7 +49,7 @@ int	usleep(unsigned int useconds);
 #include "vr_helper.h"
 
 #include "3dmaths.h"
-#include "main.h"
+#include "global.h"
 #include "log.h"
 #include "vulkan.h"
 #include "vulkan_helper.h"

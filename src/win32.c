@@ -25,46 +25,12 @@ freely, subject to the following restrictions:
 #include <stdio.h>
 #include <stdint.h>
 
+#include "global.h"
 #include "log.h"
-///////////////////////////////////////////////////////////////////////////////
-//////// Public Interface to the rest of the program
-///////////////////////////////////////////////////////////////////////////////
-#include "keyboard.h"
-
-int killme=0;
-int sys_width  = 1980;	/* dimensions of default screen */
-int sys_height = 1200;
-float sys_dpi = 1.0;
-int vid_width  = 1280;	/* dimensions of our part of the screen */
-int vid_height = 720;
-int mouse_x = 0;
-int mouse_y = 0;
-int mickey_x = 0;
-int mickey_y = 0;
-char mouse[] = {0,0,0,0,0,0,0,0};
-#define KEYMAX 512
-char keys[KEYMAX];
 
 int fullscreen = 0;
 int fullscreen_toggle = 0;
 
-int main_init(int argc, char *argv[]);
-void main_loop(void);
-void main_end(void);
-
-uint64_t sys_ticksecond = 1000;
-static uint64_t sys_time_start = 0;
-uint64_t sys_time(void)
-{
-	uint64_t now;
-	QueryPerformanceCounter((LARGE_INTEGER*)&now);
-	return now - sys_time_start;
-}
-
-void shell_browser(char *url)
-{
-	ShellExecute(NULL, "open", url, NULL, NULL, SW_SHOWNORMAL);
-}
 
 struct fvec2
 {
@@ -556,9 +522,6 @@ int APIENTRY WinMain(HINSTANCE hCurrentInst, HINSTANCE hPrev,
 {
 	hInst = hCurrentInst;
 	CmdShow = nCmdShow;
-	QueryPerformanceFrequency((LARGE_INTEGER*)&sys_ticksecond);
-	QueryPerformanceCounter((LARGE_INTEGER*)&sys_time_start);
-
 	log_init();
 	log_info("Platform    : win32");
 	/* Convert win32 style arguments to standard format */

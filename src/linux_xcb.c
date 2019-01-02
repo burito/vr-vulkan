@@ -30,48 +30,6 @@ freely, subject to the following restrictions:
 //////// Public Interface to the rest of the program
 ///////////////////////////////////////////////////////////////////////////////
 
-#include "keyboard.h"
-
-int killme = 0;
-int sys_width  = 1980;	/* dimensions of default screen */
-int sys_height = 1200;
-int sys_dpi = 1.0;
-int vid_width  = 1280;	/* dimensions of our part of the screen */
-int vid_height = 720;
-int win_width  = 0;		/* used for switching from fullscreen back to window */
-int win_height = 0;
-int mouse_x;
-int mouse_y;
-int mickey_x;
-int mickey_y;
-char mouse[] = {0,0,0};
-#define KEYMAX 128
-char keys[KEYMAX];
-
-int fullscreen=0;
-int fullscreen_toggle=0;
-
-int main_init(int argc, char *argv[]);
-void main_loop(void);
-void main_end(void);
-
-const uint64_t sys_ticksecond = 1000000000;
-static uint64_t sys_time_start = 0;
-uint64_t sys_time(void)
-{
-	struct timespec ts;
-	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-	return (ts.tv_sec * 1000000000 + ts.tv_nsec) - sys_time_start;
-}
-
-void shell_browser(char *url)
-{
-	int c=1000;
-	char buf[c];
-	memset(buf, 0, sizeof(char)*c);
-	snprintf(buf, c, "sensible-browser %s &", url);
-	system(buf);
-}
 ///////////////////////////////////////////////////////////////////////////////
 //////// End Public Interface
 ///////////////////////////////////////////////////////////////////////////////

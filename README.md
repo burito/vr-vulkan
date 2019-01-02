@@ -3,12 +3,17 @@ VR-Vulkan Example
 This is a basic Vulkan Fragment Shader Window example, that compiles from the command line on Windows, Linux and MacOS. It's currently growing VR support out of the side.
 
 
-Compiling (all OS's)
+Quick Start (all OS's)
 --------------------
     git clone --recurse-submodules git@github.com:burito/vr-vulkan
     cd vr-vulkan
-    make
+    make -j8                # adjust number to suit your CPU
+    vulkan.exe                              # windows
+    ./vulkan                                # linux
+    ./vulkan.bin                            # MacOS
+    ./vulkan.app/Contents/MacOS/vulkan      # MacOS with keyboard support
 
+If you have Steam and SteamVR installed (SteamVR is listed in Steam's "Tools" menu), then press F9. If you don't have a VR headset that works with SteamVR, you can use the [null driver](https://developer.valvesoftware.com/wiki/SteamVR/steamvr.vrsettings).
 
 Build Environment
 -----------------
@@ -17,7 +22,7 @@ Build Environment
 * Install [mingw-w64-install.exe](http://sourceforge.net/projects/mingw-w64/files/) 8.1.0-x86_64-posix-seh
 * Add its ```bin``` directory to your path
 * Install current GPU drivers
-	* Nvidia 416.81
+	* Nvidia 417.35
 
 ### Linux
 * Install current GPU drivers and compiler
@@ -55,34 +60,19 @@ And so on and so forth.
 Usage
 -----
  * F9 - restart window
- * F10 - toggle VR
+ * F9 - toggle VR
  * F11 - toggle fullscreen
 
 Libraries
 ---------
 They are all in submodules now.
     git submodule init
-    git submodule update
-
-
-
-### Windows & Linux
-Grab them from the [LunarG Vulkan SDK](https://vulkan.lunarg.com/)
-
-### MacOS
-Check the MoltenVK Github Readme for up to date information, but as of now...
-
-    git clone git@github.com:KhronosGroup/MoltenVK
-    cd MoltenVK
-    ./fetchDependencies
-    xcodebuild -project MoltenVKPackaging.xcodeproj -scheme "MoltenVK Package (Release)" build
-
-Then grab them from that directory.
+    git submodule update --remote
 
 
 Credits
 =======
-* ```deps/*stb*``` - Sean Barret
+* ```deps/stb``` - Sean Barret
 	* https://github.com/nothings/stb
 	* stb_image 2.19
 * ```deps/fast_atof.c``` - Tom Van Baak

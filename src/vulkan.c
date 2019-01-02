@@ -53,7 +53,7 @@ extern xcb_window_t window;
 #include "vulkan.h"
 #include "3dmaths.h"
 #include "mesh.h"
-#include "main.h"
+#include "global.h"
 
 #include "vert_spv.h"
 #include "frag_spv.h"

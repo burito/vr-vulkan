@@ -19,3 +19,6 @@
 [submodule "deps/models"]
 	path = deps/models
 	url = https://github.com/burito/models
+[submodule "deps/dpb"]
+	path = deps/dpb
+	url = https://github.com/burito/dpb

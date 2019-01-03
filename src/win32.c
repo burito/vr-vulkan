@@ -28,10 +28,6 @@ freely, subject to the following restrictions:
 #include "global.h"
 #include "log.h"
 
-int fullscreen = 0;
-int fullscreen_toggle = 0;
-
-
 struct fvec2
 {
 	float x, y;
@@ -61,6 +57,8 @@ int CmdShow;
 
 int win_width  = 0;	/* used for switching from fullscreen back to window */
 int win_height = 0;
+int fullscreen = 0;
+int fullscreen_toggle = 0;
 
 int window_maximized = 0;
 int focus = 1;

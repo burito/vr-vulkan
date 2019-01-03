@@ -46,13 +46,11 @@ OBJS = main.o log.o global.o vr.o vr_helper.o vulkan.o vulkan_helper.o version.o
 CFLAGS = -std=c11 -Ideps/include -Ibuild -Ideps/dpb/src
 VPATH = src build deps deps/dpb/src
 
-WIN_LIBS = -luser32 -lwinmm -lgdi32 -lshell32
-# use this line with gcc
-WIN_OBJS += c\:/Windows/system32/vulkan-1.dll openvr_api.dll
+WIN_LIBS = c\:/Windows/system32/vulkan-1.dll openvr_api.dll -luser32 -lwinmm -lgdi32 -lshell32
 # use this line with clang/msvc
-#WIN_LIBS += -ldeps/openvr/lib/win64/openvr_api.lib -ldeps/vulkan-lib/win/vulkan-1
+#WIN_LIBS = -ldeps/openvr/lib/win64/openvr_api.lib -ldeps/vulkan-lib/win/vulkan-1
 LIN_LIBS = ./deps/openvr/bin/linux64/libopenvr_api.so ./deps/vulkan-lib/lin/libvulkan.so -lX11 -lm -lrt
-#LIN_LIBS = -Ldeps/lin -lvulkan -lxcb -lm -lopenvr_api -lrt
+#LIN_LIBS = ./deps/openvr/bin/linux64/libopenvr_api.so ./deps/vulkan-lib/lin/libvulkan.so -lxcb -lm -lrt
 MAC_LIBS = deps/vulkan-lib/mac/libMoltenVK.dylib deps/openvr/bin/osx32/libopenvr_api.dylib -framework CoreVideo -framework QuartzCore -rpath . -framework Cocoa
 
 WIN_DIR = build/win
@@ -97,7 +95,7 @@ vulkan: $(LIN_OBJS)
 	$(CC) $(CFLAGS) $^ $(LIN_LIBS) -o $@
 
 vulkan.bin: $(MAC_OBJS) libMoltenVK.dylib libopenvr_api.dylib
-	$(CC) $(CFLAGS) $(MAC_LIBS) $^ -o $@
+	$(CC) $(CFLAGS) $^ $(MAC_LIBS) -o $@
 
 
 $(BUILD_DIR)/vulkan.o: vulkan.c build/vert_spv.h build/frag_spv.h build/mesh_vert_spv.h build/mesh_frag_spv.h

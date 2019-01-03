@@ -46,7 +46,7 @@ OBJS = main.o log.o global.o vr.o vr_helper.o vulkan.o vulkan_helper.o version.o
 CFLAGS = -std=c11 -Ideps/include -Ibuild -Ideps/dpb/src
 VPATH = src build deps deps/dpb/src
 
-WIN_LIBS = c\:/Windows/system32/vulkan-1.dll openvr_api.dll -luser32 -lwinmm -lgdi32 -lshell32
+WIN_LIBS = c:/Windows/system32/vulkan-1.dll -luser32 -lwinmm -lgdi32 -lshell32
 # use this line with clang/msvc
 #WIN_LIBS = -ldeps/openvr/lib/win64/openvr_api.lib -ldeps/vulkan-lib/win/vulkan-1
 LIN_LIBS = ./deps/openvr/bin/linux64/libopenvr_api.so ./deps/vulkan-lib/lin/libvulkan.so -lX11 -lm -lrt
@@ -88,7 +88,7 @@ libopenvr_api.dylib: deps/openvr/bin/osx32/libopenvr_api.dylib
 openvr_api.dll: deps/openvr/bin/win64/openvr_api.dll
 	cp $< $@
 
-vulkan.exe: $(WIN_OBJS)
+vulkan.exe: $(WIN_OBJS) openvr_api.dll
 	$(CC) $^ $(WIN_LIBS) -o $@
 
 vulkan: $(LIN_OBJS)

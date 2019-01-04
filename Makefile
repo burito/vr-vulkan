@@ -17,9 +17,9 @@ _MAC_OBJS = macos.o $(OBJS)
 
 include deps/dpb/Makefile
 
-$(BINARY_NAME).exe: $(WIN_OBJS)
+$(BINARY_NAME).exe: $(WIN_OBJS) openvr_api.dll
 
-$(BINARY_NAME): $(LIN_OBJS)
+$(BINARY_NAME): $(LIN_OBJS) libopenvr_api.so
 
 $(BINARY_NAME).bin: $(MAC_OBJS) libMoltenVK.dylib libopenvr_api.dylib
 
@@ -31,6 +31,10 @@ libopenvr_api.dylib: deps/openvr/bin/osx32/libopenvr_api.dylib
 
 openvr_api.dll: deps/openvr/bin/win64/openvr_api.dll
 	cp $< $@
+
+libopenvr_api.so: deps/openvr/bin/linux64/libopenvr_api.so
+	cp $< $@
+
 
 $(BUILD_DIR)/vulkan.o: vulkan.c build/vert_spv.h build/frag_spv.h build/mesh_vert_spv.h build/mesh_frag_spv.h
 

@@ -7,8 +7,7 @@ VPATH = src build deps deps/dpb/src
 WIN_LIBS = c:/Windows/system32/vulkan-1.dll -luser32 -lwinmm -lgdi32 -lshell32
 # use this line with clang/msvc
 #WIN_LIBS = -ldeps/openvr/lib/win64/openvr_api.lib -ldeps/vulkan-lib/win/vulkan-1
-LIN_LIBS = ./deps/openvr/bin/linux64/libopenvr_api.so ./deps/vulkan-lib/lin/libvulkan.so -lX11 -lm -lrt
-#LIN_LIBS = ./deps/openvr/bin/linux64/libopenvr_api.so ./deps/vulkan-lib/lin/libvulkan.so -lxcb -lm -lrt
+LIN_LIBS = ./deps/vulkan-lib/lin/libvulkan.so -lX11 -lm -lrt -rpath .
 MAC_LIBS = deps/vulkan-lib/mac/libMoltenVK.dylib deps/openvr/bin/osx32/libopenvr_api.dylib -framework CoreVideo -framework QuartzCore -rpath . -framework Cocoa
 
 _WIN_OBJS = win32.o win32.res $(OBJS)

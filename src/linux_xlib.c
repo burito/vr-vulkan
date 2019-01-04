@@ -83,6 +83,7 @@ int fullscreen_toggle = 0;
 int win_width  = 0;	/* used for switching from fullscreen back to window */
 int win_height = 0;
 
+extern unsigned char _binary_build_lin_icon_head_start[];
 
 XSetWindowAttributes xwin_attr;
 //XVisualInfo *xvis;
@@ -379,23 +380,23 @@ static void x11_window(void)
 		DefaultDepth(display, screen), InputOutput, DefaultVisual(display, screen),
 		CWBorderPixel | CWColormap | CWEventMask | CWOverrideRedirect,
 		&xwin_attr);
-/*	// Set the icon
+	// Set the icon
 	Atom net_wm_icon = XInternAtom(display, "_NET_WM_ICON", False);
 	Atom cardinal = XInternAtom(display, "CARDINAL", False);
 	int icon_length = 2 + 256 * 256;
 
 	XChangeProperty(display, window, net_wm_icon, cardinal, 32,
-		PropModeReplace, icon_buffer, icon_length);
-*/
+		PropModeReplace, _binary_build_lin_icon_head_start, icon_length);
+
 	// I will handle quit messages
 	Atom delwm = XInternAtom(display, "WM_DELETE_WINDOW", False);
 	XSetWMProtocols(display, window, &delwm, 1);
 
-/*
+
 	// My window shall be named...
 	XSetStandardProperties(display, window, "Kittens", "Kitteh", None,
 		NULL, 0, NULL);
-*/
+
 	XMapRaised(display, window);
 
 	if(fullscreen)

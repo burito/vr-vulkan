@@ -7,10 +7,10 @@ Quick Start (all OS's)
     git clone --recurse-submodules git@github.com:burito/vr-vulkan
     cd vr-vulkan
     make -j8                # adjust number to suit your CPU
-    vulkan.exe                              # windows
-    ./vulkan                                # linux
-    ./vulkan.bin                            # MacOS
-    ./vulkan.app/Contents/MacOS/vulkan      # MacOS with keyboard support
+    vr-vulkan.exe                              # windows
+    ./vr-vulkan                                # linux
+    ./vr-vulkan.bin                            # MacOS
+    ./vr-vulkan.app/Contents/MacOS/vulkan      # MacOS with keyboard support
 
 If you have Steam and SteamVR installed (SteamVR is listed in Steam's "Tools" menu), then press F9. If you don't have a VR headset that works with SteamVR, you can use the [null driver](https://developer.valvesoftware.com/wiki/SteamVR/steamvr.vrsettings).
 

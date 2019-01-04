@@ -11,7 +11,6 @@ LIN_LIBS = ./deps/openvr/bin/linux64/libopenvr_api.so ./deps/vulkan-lib/lin/libv
 #LIN_LIBS = ./deps/openvr/bin/linux64/libopenvr_api.so ./deps/vulkan-lib/lin/libvulkan.so -lxcb -lm -lrt
 MAC_LIBS = deps/vulkan-lib/mac/libMoltenVK.dylib deps/openvr/bin/osx32/libopenvr_api.dylib -framework CoreVideo -framework QuartzCore -rpath . -framework Cocoa
 
-
 _WIN_OBJS = win32.o win32.res $(OBJS)
 _LIN_OBJS = linux_xlib.o $(OBJS)
 _MAC_OBJS = macos.o $(OBJS)
@@ -87,8 +86,6 @@ $(MAC_CONTENTS)/MacOS/$(BINARY_NAME): $(BINARY_NAME).bin
 	-change @loader_path/libopenvr_api.dylib @loader_path/../Frameworks/libopenvr_api.dylib $@
 #	install_name_tool -change libopenvr_api.dylib @loader_path/../Frameworks/libopenvr_api.dylib $@
 	install_name_tool -add_rpath "@loader_path/../Frameworks" $@
-
-.DELETE_ON_ERROR :
 # end build the App Bundle
 
 clean:

@@ -7,35 +7,25 @@
 		{
 			"name": "(lldb) Launch",
 			"linux": {
-				"program": "${workspaceFolder}/vulkan",
-				"miDebuggerPath": "/usr/bin/gdb",
-				"MIMode": "gdb",
-				"environment": [{"name":"LD_LIBRARY_PATH", "value":"${workspaceFolder}"}],
+				"program": "${workspaceFolder}/vr-vulkan"
 			},
 			"windows": {
-				"program": "${workspaceFolder}/vulkan.exe",
+				"program": "${workspaceFolder}/vr-vulkan.exe",
 				"miDebuggerPath": "C:/Program Files/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/gdb.exe",
-				"MIMode": "gdb",
+				"MIMode": "gdb"
 			},
 			"osx":{
-				"program": "${workspaceFolder}/vulkan.app/Contents/MacOS/vulkan",
-				"MIMode": "lldb",
+				"program": "${workspaceFolder}/vr-vulkan.app/Contents/MacOS/vr-vulkan"
 			},
 			"type": "cppdbg",
 			"request": "launch",
+			"MIMode": "lldb",
 
 			"args": [],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}",
 			"environment": [],
-			"externalConsole": true,
-			"setupCommands": [
-				{
-					"description": "Enable pretty-printing for gdb",
-					"text": "-enable-pretty-printing",
-					"ignoreFailures": true
-				}
-			],
+			"externalConsole": true
 		}
 	]
 }

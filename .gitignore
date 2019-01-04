@@ -1,18 +1,8 @@
 .DS_Store
 build
+vr-vulkan*
 
-#win32 files
-vulkan.exe
-vulkan.ilk
-vulkan.pdb
 openvr_api.dll
-
-#mac files
-vulkan.app
-vulkan.bin
 libMoltenVK.dylib
 libopenvr_api.dylib
-
-#linux files
-vulkan
 libopenvr_api.so

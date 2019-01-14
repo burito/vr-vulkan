@@ -2218,7 +2218,7 @@ void vulkan_vr_end(void)
 }
 
 
-void vulkan_resize(void)
+void gfx_resize(void)
 {
 	VkResult result;
 	if(vk.finished_initialising != 1) return;

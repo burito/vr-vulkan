@@ -12,7 +12,7 @@ MAC_LIBS = deps/vulkan-lib/mac/libMoltenVK.dylib deps/openvr/bin/osx32/libopenvr
 
 _WIN_OBJS = win32.o win32.res $(OBJS)
 _LIN_OBJS = linux_xlib.o $(OBJS)
-_MAC_OBJS = macos.o $(OBJS)
+_MAC_OBJS = osx.o gfx_vulkan_osx.o $(OBJS)
 
 include deps/dpb/Makefile
 

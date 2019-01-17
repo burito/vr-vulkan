@@ -14,7 +14,7 @@ _WIN_OBJS = win32.o win32.res $(OBJS)
 _LIN_OBJS = linux_xlib.o $(OBJS)
 _MAC_OBJS = osx.o gfx_vulkan_osx.o $(OBJS)
 
-include deps/dpb/Makefile
+include deps/dpb/src/Makefile
 
 $(BINARY_NAME).exe: $(WIN_OBJS) openvr_api.dll
 

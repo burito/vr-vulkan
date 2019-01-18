@@ -52,7 +52,6 @@ void gfx_init(void);
 int main_init(int argc, char *argv[])
 {
 	log_info("Version     : %s", git_version);
-	gfx_init();
 	time_start = sys_time();
 
 	if( vulkan_init() )

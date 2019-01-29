@@ -4,8 +4,8 @@ COPYRIGHT = 2018-2019
 DESCRIPTION = OpenVR Vulkan Test
 BINARY_NAME = vr-vulkan
 OBJS = main.o log.o global.o vr.o vr_helper.o vulkan.o vulkan_helper.o version.o 3dmaths.o text.o mesh.o image.o stb_image.o fast_atof.o
-CFLAGS = -std=c11 -Ideps/include -Ibuild -Ideps/dpb/src
-VPATH = src build deps deps/dpb/src
+CFLAGS = -std=c11 -Ideps/include -Ideps/dpb/src
+VPATH = src deps deps/dpb/src
 
 WIN_LIBS = c:/Windows/system32/vulkan-1.dll -luser32 -lwinmm -lgdi32 -lshell32
 # use this line with clang/msvc
@@ -18,6 +18,8 @@ _LIN_OBJS = linux_xlib.o $(OBJS)
 _MAC_OBJS = osx.o gfx_vulkan_osx.o $(OBJS)
 
 include deps/dpb/src/Makefile
+
+CFLAGS += -I$(BUILD_DIR)
 
 $(BINARY_NAME).exe: $(WIN_OBJS) openvr_api.dll
 
@@ -38,33 +40,33 @@ libopenvr_api.so: deps/openvr/bin/linux64/libopenvr_api.so
 	cp $< $@
 
 
-$(BUILD_DIR)/vulkan.o: vulkan.c build/vert_spv.h build/frag_spv.h build/mesh_vert_spv.h build/mesh_frag_spv.h
+vulkan.o: vulkan.c vert_spv.h frag_spv.h mesh_vert_spv.h mesh_frag_spv.h
 
 # build the shaders - nasty hack
-build/frag.spv : shader.frag
-	$(GLSLANG) -V -H $< -o $@ > build/frag_spv.h.txt
+$(BUILD_DIR)/frag.spv : shader.frag
+	$(GLSLANG) -V -H $< -o $@ > $(BUILD_DIR)/frag_spv.h.txt
 
-build/vert.spv : shader.vert
-	$(GLSLANG) -V -H $< -o $@ > build/vert_spv.h.txt
+$(BUILD_DIR)/vert.spv : shader.vert
+	$(GLSLANG) -V -H $< -o $@ > $(BUILD_DIR)/vert_spv.h.txt
 
-build/vert_spv.h : build/vert.spv
-	xxd -i $< > $@ 
+$(BUILD_DIR)/vert_spv.h : $(BUILD_DIR)/vert.spv
+	(cd $(BUILD_DIR) && xxd -i vert.spv > vert_spv.h)
 
-build/frag_spv.h : build/frag.spv
-	xxd -i $< > $@
+$(BUILD_DIR)/frag_spv.h : $(BUILD_DIR)/frag.spv
+	(cd $(BUILD_DIR) && xxd -i frag.spv > frag_spv.h)
 
 # build the mesh shaders - nasty hack continues!
-build/mesh_frag.spv : mesh_shader.frag
-	$(GLSLANG) -V -H $< -o $@ > build/mesh_frag_spv.h.txt
+$(BUILD_DIR)/mesh_frag.spv : mesh_shader.frag
+	$(GLSLANG) -V -H $< -o $@ > $(BUILD_DIR)/mesh_frag_spv.h.txt
 
-build/mesh_vert.spv : mesh_shader.vert
-	$(GLSLANG) -V -H $< -o $@ > build/mesh_vert_spv.h.txt
+$(BUILD_DIR)/mesh_vert.spv : mesh_shader.vert
+	$(GLSLANG) -V -H $< -o $@ > $(BUILD_DIR)/mesh_vert_spv.h.txt
 
-build/mesh_vert_spv.h : build/mesh_vert.spv
-	xxd -i $< > $@ 
+$(BUILD_DIR)/mesh_vert_spv.h : mesh_vert.spv
+	(cd $(BUILD_DIR) && xxd -i mesh_vert.spv > mesh_vert_spv.h)
 
-build/mesh_frag_spv.h : build/mesh_frag.spv
-	xxd -i $< > $@
+$(BUILD_DIR)/mesh_frag_spv.h : mesh_frag.spv
+	(cd $(BUILD_DIR) && xxd -i mesh_frag.spv > mesh_frag_spv.h)
 
 
 # this has to list everything inside the app bundle

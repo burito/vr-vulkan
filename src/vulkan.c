@@ -830,10 +830,10 @@ void vk_pipeline_mesh(int reinit)
 	};
 
 	vk.mesh.vertex_input_state_crinf = &vertex_input_state_crinf;
-	vk.mesh.shader_vertex_size = build_mesh_vert_spv_len;
-	vk.mesh.shader_fragment_size = build_mesh_frag_spv_len;
-	vk.mesh.shader_vertex_code = (const uint32_t *)build_mesh_vert_spv;
-	vk.mesh.shader_fragment_code = (const uint32_t *)build_mesh_frag_spv;
+	vk.mesh.shader_vertex_size = mesh_vert_spv_len;
+	vk.mesh.shader_fragment_size = mesh_frag_spv_len;
+	vk.mesh.shader_vertex_code = (const uint32_t *)mesh_vert_spv;
+	vk.mesh.shader_fragment_code = (const uint32_t *)mesh_frag_spv;
 	vk.mesh.ubo_size = sizeof(struct MESH_UNIFORM_BUFFER);
 	vk_pipeline(&vk.mesh, reinit);
 }

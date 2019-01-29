@@ -40,7 +40,7 @@ libopenvr_api.so: deps/openvr/bin/linux64/libopenvr_api.so
 	cp $< $@
 
 
-vulkan.o: vulkan.c vert_spv.h frag_spv.h mesh_vert_spv.h mesh_frag_spv.h
+$(OUT_DIR)/vulkan.o: vulkan.c vert_spv.h frag_spv.h mesh_vert_spv.h mesh_frag_spv.h
 
 # build the shaders - nasty hack
 $(BUILD_DIR)/frag.spv : shader.frag

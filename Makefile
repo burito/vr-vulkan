@@ -95,9 +95,3 @@ $(MAC_CONTENTS)/MacOS/$(BINARY_NAME): $(BINARY_NAME).bin
 #	install_name_tool -change libopenvr_api.dylib @loader_path/../Frameworks/libopenvr_api.dylib $@
 	install_name_tool -add_rpath "@loader_path/../Frameworks" $@
 # end build the App Bundle
-
-clean:
-	@rm -rf build $(BINARY_NAME) $(BINARY_NAME).exe $(BINARY_NAME).bin $(BINARY_NAME).app libMoltenVK.dylib libopenvr_api.dylib openvr_api.dll libopenvr_api.so
-
-# create the build directory
-$(shell	mkdir -p $(BUILD_DIR))

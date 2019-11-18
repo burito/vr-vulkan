@@ -1406,12 +1406,14 @@ VK_INIT_INSTANCE:
 void vulkan_end(void)
 {
 	VkResult result;
+	return;
 	result = vkQueueWaitIdle(vk.queue);
+//	result = vkDeviceWaitIdle(vk.device);
 
 
 	if( result != VK_SUCCESS )
 	{
-		log_warning("vkQueueWaitIdle = %s", vulkan_result(result));
+		log_warning("vkDeviceWaitIdle = %s", vulkan_result(result));
 //		goto TODO_ERROR_HANDLING;
 	}
 
@@ -1439,6 +1441,9 @@ void vulkan_end(void)
 	vkDestroyInstance(vk.instance, NULL);
 }
 
+void vulkan_resize(void);
+
+
 int vulkan_loop(void)
 {
 	uint32_t next_image = 0;
@@ -1449,6 +1454,7 @@ int vulkan_loop(void)
 		log_warning("vkAcquireNextImageKHR = %s", vulkan_result(result));
 		switch(result) {
 		case VK_ERROR_OUT_OF_DATE_KHR:
+			vulkan_resize();
 			return 0;
 		case VK_ERROR_DEVICE_LOST:
 			killme=1;
@@ -2220,10 +2226,16 @@ void vulkan_vr_end(void)
 
 void gfx_resize(void)
 {
+
+}
+
+void vulkan_resize(void)
+{
+//	return;
 	VkResult result;
 	if(vk.finished_initialising != 1) return;
 
-//	log_info("resize x = %d, y = %d", vid_width, vid_height);
+	log_info("resize x = %d, y = %d", vid_width, vid_height);
 
 	result = vkQueueWaitIdle(vk.queue);
 
@@ -2233,7 +2245,6 @@ void gfx_resize(void)
 
 	vkDestroyPipelineLayout(vk.device, vk.mesh.pipeline_layout, NULL);
 	vkDestroyPipeline(vk.device, vk.mesh.pipeline, NULL);
-
 
 	result = vk_surface();
 	if( result != VK_SUCCESS )

@@ -1,24 +1,24 @@
 [submodule "deps/Vulkan-Headers"]
 	path = deps/Vulkan-Headers
-	url = https://github.com/KhronosGroup/Vulkan-Headers
+	url = git@github.com:KhronosGroup/Vulkan-Headers
 [submodule "deps/MoltenVK"]
 	path = deps/MoltenVK
-	url = https://github.com/KhronosGroup/MoltenVK
+	url = git@github.com:KhronosGroup/MoltenVK
 [submodule "deps/openvr"]
 	path = deps/openvr
-	url = https://github.com/ValveSoftware/openvr
+	url = git@github.com:ValveSoftware/openvr
 [submodule "deps/stb"]
 	path = deps/stb
-	url = https://github.com/nothings/stb
+	url = git@github.com:nothings/stb
 [submodule "deps/small-matrix-inverse"]
 	path = deps/small-matrix-inverse
-	url = https://github.com/niswegmann/small-matrix-inverse
+	url = git@github.com:niswegmann/small-matrix-inverse
 [submodule "deps/vulkan-lib"]
 	path = deps/vulkan-lib
-	url = https://github.com/burito/vulkan-lib
+	url = git@github.com:burito/vulkan-lib
 [submodule "deps/models"]
 	path = deps/models
-	url = https://github.com/burito/models
+	url = git@github.com:burito/models
 [submodule "deps/dpb"]
 	path = deps/dpb
-	url = https://github.com/burito/dpb
+	url = git@github.com:burito/dpb

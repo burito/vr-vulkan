@@ -3,7 +3,7 @@ COMPANY = Daniel Burke
 COPYRIGHT = 2018-2019
 DESCRIPTION = OpenVR Vulkan Test
 BINARY_NAME = vr-vulkan
-OBJS = main.o log.o global.o vr.o vr_helper.o vulkan.o vulkan_helper.o version.o 3dmaths.o text.o mesh.o image.o stb_image.o fast_atof.o
+OBJS = main.o log.o global.o vr.o vr_helper.o vulkan.o vulkan_helper.o version.o 3dmaths.o text.o mesh.o image.o stb_image.o fast_atof.o fps_movement.o
 CFLAGS = -std=c11 -Ideps/include -Ideps/dpb/src
 VPATH = src deps deps/dpb/src
 

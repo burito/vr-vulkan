@@ -23,6 +23,7 @@ freely, subject to the following restrictions:
 
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 #include <vulkan/vulkan.h>
 
@@ -76,6 +77,12 @@ void main_end(void)
 	log_info("Shutdown    : OK");
 }
 
+int p_swim = 0;
+
+// last digit of angle is x-fov, in radians
+vec4 pos = {0.0, 0.0, 0.0, 0.0};
+vec4 angle = {0.0, 0.0, 0.0, M_PI*0.5};
+
 
 void render(mat4x4 view, mat4x4 projection, struct MESH_UNIFORM_BUFFER *dest)
 {
@@ -83,6 +90,10 @@ void render(mat4x4 view, mat4x4 projection, struct MESH_UNIFORM_BUFFER *dest)
 	model = mul( model, mat4x4_rot_y(current_time) );		// rotate the bunny
 	model = mul( model, mat4x4_translate_float(-0.5, -0.5, -0.5) ); // around it's own origin
 	model = mul( mat4x4_translate_float( 0, 0, -2), model );	// move it 2 metres infront of the origin
+
+	model = mul(mat4x4_translate_vect( pos.xyz ), model);	// move to player position
+	model = mul(mat4x4_rot_y(angle.y ), model);
+	model = mul(mat4x4_rot_x(angle.x ), model);
 
 	dest->modelview = mul( view, model );
 	dest->projection = projection;
@@ -113,6 +124,78 @@ void main_loop(void)
 		if(!vr_using)vr_init();
 		else vr_end();
 	}
+
+	// for first person movement
+	pos.w = 0.5 / (float)vid_width;
+
+	vect req = {0,0,0};
+	float nice = 0.0002;
+
+	if(keys[KEY_LSHIFT])
+		nice *= 10.0;
+
+	if(keys[KEY_ESCAPE])
+	{
+		killme=1;
+	}
+	if(keys[KEY_W])
+	{
+		req.z -= nice;
+	}
+	if(keys[KEY_S])
+	{
+		req.z += nice;
+	}
+	if(keys[KEY_A])
+	{
+		req.x += nice;
+	}
+	if(keys[KEY_D])
+	{
+		req.x -= nice;
+	}
+	if(keys[KEY_LCONTROL])
+	{
+		req.y += nice;
+	}
+	if(keys[KEY_SPACE])
+	{
+		req.y -= nice;
+	}
+
+	if(mouse[2]) /// right mouse
+	{
+		angle.x -= mickey_y * 0.003;
+		angle.y -= mickey_x * 0.003;
+	}
+	if(keys[KEY_O])
+	{
+		p_swim = !p_swim;
+		keys[KEY_S] = 0;
+		log_info("Swimming is %s.", p_swim ? "engaged" : "off");
+	}
+	if(keys[KEY_P])
+	{
+		log_info("vec4 pos = {%f, %f, %f, 0.0};", pos.x, pos.y, pos.z);
+		log_info("vec4 angle = {%f, %f, %f, M_PI*0.5};", angle.x, angle.y, angle.z);
+	}
+
+	if(p_swim)
+	{
+		float cx = cos(angle.x), sx = sin(angle.x), ty = req.y;
+		req.y = req.y * cx - req.z * sx;	// around x
+		req.z = ty * sx + req.z * cx;
+	}
+
+
+	float cy = cos(angle.y), sy = sin(angle.y), tx = req.x;
+	req.x = req.x * cy + req.z * sy;	// around y
+	req.z = tx * sy - req.z * cy;
+
+
+	pos.xyz = add(pos.xyz, req);
+
+
 
 	current_time = (sys_time() - time_start) / (float)sys_ticksecond;
 

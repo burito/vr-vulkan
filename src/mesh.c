@@ -132,7 +132,7 @@ static WF_MTL* mtl_newmtl(char *hostpath, FILE *fptr, char *name)
 	m->name = hcopy(name);
 	char buf[BUF_LEN];
 	float *targetf;
-	vect *targetf3;
+	vec3 *targetf3;
 	IMG **targeti;
 	char *path;
 
@@ -249,9 +249,9 @@ static WF_MTL* find_material(WF_MTL *m, char *name)
 static void wf_bound(WF_OBJ *w)
 {
 	if(!w)return;
-	vect *v = w->v;
+	vec3 *v = w->v;
 	if(!v)return;
-	vect min, max, size, mid;
+	vec3 min, max, size, mid;
 	max = min = v[0];
 	for(int i=0; i<w->nv; i++)
 	{
@@ -349,15 +349,15 @@ static void wf_face_normals(WF_OBJ *w)
 	if(!w)return;
 	if(!w->nf)return;
 
-	vect a, b, t;
+	vec3 a, b, t;
 
 	// Generate per face normals
 	for(int i=0; i<w->nf; i++)
 	{
 		a = sub( w->v[w->f[i].f.y], w->v[w->f[i].f.x] );
 		b = sub( w->v[w->f[i].f.z], w->v[w->f[i].f.x] );
-		t = vect_cross( a, b );
-		w->f[i].normal = vect_norm( t );
+		t = vec3_cross( a, b );
+		w->f[i].normal = vec3_norm( t );
 	}
 }
 
@@ -408,7 +408,7 @@ static void wf_vertex_normals(WF_OBJ *w)
 	{
 		tmp = vert[i].next;
 		if(!tmp)continue;
-		vect t = {.f={0,0,0}};
+		vec3 t = {.f={0,0,0}};
 		while(tmp)
 		{
 			t = add(t, w->f[tmp->face].normal);
@@ -419,7 +419,7 @@ static void wf_vertex_normals(WF_OBJ *w)
 
 		if((t.x*t.x + t.y*t.y + t.z*t.z )>0.1)
 		{
-			w->vn[i] = vect_norm(t);
+			w->vn[i] = vec3_norm(t);
 		}
 
 	}
@@ -434,8 +434,8 @@ static void wf_normals(WF_OBJ *w)
 	if(w->nv == w->nn)return;
 
 	if(w->vn)free(w->vn);
-	w->vn = malloc(sizeof(vect)*w->nv);
-	memset(w->vn, 0, sizeof(vect)*w->nv);
+	w->vn = malloc(sizeof(vec3)*w->nv);
+	memset(w->vn, 0, sizeof(vec3)*w->nv);
 	w->nn = w->nv;
 	
 	wf_face_normals(w);
@@ -448,7 +448,7 @@ static void wf_texcoords(WF_OBJ *w)
 {
 	if(!w)return;
 	if(!w->nt)return;
-	const int size = w->nv * sizeof(coord);
+	const int size = w->nv * sizeof(vec2);
 	w->uv = malloc(size);
 	memset(w->uv, 0, size);
 
@@ -670,9 +670,9 @@ WF_OBJ* wf_parse(char *filename)
 	case 's': w->ns++; break;
 	}
 	// alloc the memory
-	if(w->nv)w->v = malloc(sizeof(vect)*w->nv);
-	if(w->nt)w->vt = malloc(sizeof(vect)*w->nt);
-	if(w->nn)w->vn = malloc(sizeof(vect)*w->nn);
+	if(w->nv)w->v = malloc(sizeof(vec3)*w->nv);
+	if(w->nt)w->vt = malloc(sizeof(vec3)*w->nt);
+	if(w->nn)w->vn = malloc(sizeof(vec3)*w->nn);
 	if(w->nf)
 	{
 		w->f = malloc(sizeof(WF_FACE)*w->nf);
@@ -691,7 +691,7 @@ WF_OBJ* wf_parse(char *filename)
 	// read the verts
 	rewind(fptr);
 	int tmp;
-	vect *target;
+	vec3 *target;
 
 	WF_MTL *lastmat=0;
 	while(fgets(buf, 1024, fptr))

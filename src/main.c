@@ -91,7 +91,7 @@ void render(mat4x4 view, mat4x4 projection, struct MESH_UNIFORM_BUFFER *dest)
 	model = mul( model, mat4x4_translate_float(-0.5, -0.5, -0.5) ); // around it's own origin
 	model = mul( mat4x4_translate_float( 0, 0, -2), model );	// move it 2 metres infront of the origin
 
-	model = mul(mat4x4_translate_vect( position.xyz ), model);	// move to player position
+	model = mul(mat4x4_translate_vec3( position.xyz ), model);	// move to player position
 	model = mul(mat4x4_rot_y(angle.y ), model);
 	model = mul(mat4x4_rot_x(angle.x ), model);
 

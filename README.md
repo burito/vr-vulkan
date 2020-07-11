@@ -14,9 +14,9 @@ vr-vulkan.exe     # Windows
 If you have Steam and SteamVR installed (SteamVR is listed in Steam's "Tools" menu), then press `F9`. If you don't have a VR headset that works with SteamVR, you can use the [null driver](https://developer.valvesoftware.com/wiki/SteamVR/steamvr.vrsettings).
 
 ## Usage
- * `ESC` - quit
- * `F9` - toggle VR
- * `F11` - toggle fullscreen
+* `ESC` - quit
+* `F9` - toggle VR
+* `F11` - toggle fullscreen
 
 On Linux, to get the full Steam environment, one should use the command
 ```bash
@@ -26,11 +26,11 @@ This may not be necessary anymore.
 
 ## Build Environment
 ### Windows
-* Install [mingw-w64-install.exe](http://sourceforge.net/projects/mingw-w64/files/) 8.1.0-x86_64-posix-seh
-* Add its ```bin``` directory to your path
-* Install current GPU drivers
-	* Nvidia 430.39
-* Install [ImageMagick](http://www.imagemagick.org/script/download.php#windows)
+* Install current Nvidia drivers (451.67)
+* Install [msys2-x86_64-20200629.exe](https://www.msys2.org/)
+```bash
+pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-imagemagick mingw-w64-x86_64-clang mingw-w64-x86_64-clang-tools-extra git vim man-pages-posix --disable-download-timeout
+```
 
 ### Linux
 * Install current GPU drivers and compiler

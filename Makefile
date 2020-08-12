@@ -3,9 +3,11 @@ COMPANY = Daniel Burke
 COPYRIGHT = 2018-2019
 DESCRIPTION = OpenVR Vulkan Test
 BINARY_NAME = vr-vulkan
-OBJS = main.o log.o global.o vr.o vr_helper.o vulkan.o vulkan_helper.o version.o 3dmaths.o text.o mesh.o image.o stb_image.o fast_atof.o fps_movement.o
-CFLAGS = -std=c11 -Ideps/include -Ideps/dpb/src
-VPATH = src deps deps/dpb/src
+OBJS = main.o version.o log.o global.o vr.o 3dmaths.o fast_atof.o \
+	vr_helper.o vulkan.o vulkan_helper.o text.o mesh.o image.o stb_image.o \
+	fps_movement.o spacemouse.o
+CFLAGS = -std=c11 -Ideps/include -Ideps/dpb/src -Ideps/dpb/deps/hidapi/hidapi
+VPATH = src deps deps/dpb/src deps/dpb/deps/hidapi/
 
 WIN_LIBS = c:/Windows/system32/vulkan-1.dll -luser32 -lwinmm -lgdi32 -lshell32
 # use this line with clang/msvc
@@ -13,9 +15,9 @@ WIN_LIBS = c:/Windows/system32/vulkan-1.dll -luser32 -lwinmm -lgdi32 -lshell32
 LIN_LIBS = ./deps/vulkan-lib/lin/libvulkan.so -lX11 -lm -lrt -rpath .
 MAC_LIBS = deps/vulkan-lib/mac/libMoltenVK.dylib deps/openvr/bin/osx32/libopenvr_api.dylib -framework CoreVideo -framework QuartzCore -rpath . -framework Cocoa
 
-_WIN_OBJS = win32.o win32.res $(OBJS)
-_LIN_OBJS = linux_xlib.o $(OBJS)
-_MAC_OBJS = osx.o gfx_vulkan_osx.o $(OBJS)
+_WIN_OBJS = win32.o win32.res windows/hid.o $(OBJS)
+_LIN_OBJS = linux_xlib.o linux/hid.o $(OBJS)
+_MAC_OBJS = osx.o gfx_vulkan_osx.o mac/hid.o $(OBJS)
 
 include deps/dpb/src/Makefile
 

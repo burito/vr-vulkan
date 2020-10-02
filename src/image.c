@@ -29,7 +29,7 @@ freely, subject to the following restrictions:
 #include "vulkan_helper.h"
 
 
-#include "stb_image.h"
+#include <stb/stb_image.h>
 
 #include "image.h"
 #include "text.h"
@@ -343,4 +343,3 @@ int main(int argc, char *argv[])
 }
 
 #endif
-

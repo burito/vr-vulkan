@@ -327,7 +327,7 @@ int vr_init(void)
 
 	char fnTableName[128];
 
-	int result1 = sprintf(fnTableName, "FnTable:%s", IVRSystem_Version);
+	sprintf(fnTableName, "FnTable:%s", IVRSystem_Version);
 	OVR = (struct VR_IVRSystem_FnTable *)VR_GetGenericInterface(fnTableName, &eError);
 	if (eError != EVRInitError_VRInitError_None)
 	{
@@ -335,7 +335,7 @@ int vr_init(void)
 		return 2;
 	}
 
-	result1 = sprintf(fnTableName, "FnTable:%s", IVRCompositor_Version);
+	sprintf(fnTableName, "FnTable:%s", IVRCompositor_Version);
 	OVRC = (struct VR_IVRCompositor_FnTable *)VR_GetGenericInterface(fnTableName, &eError);
 	if (eError != EVRInitError_VRInitError_None)
 	{
@@ -343,7 +343,7 @@ int vr_init(void)
 		return 2;
 	}
 
-	result1 = sprintf(fnTableName, "FnTable:%s", IVRRenderModels_Version);
+	sprintf(fnTableName, "FnTable:%s", IVRRenderModels_Version);
 	OVRM = (struct VR_IVRRenderModels_FnTable *)VR_GetGenericInterface(fnTableName, &eError );
 	if (eError != EVRInitError_VRInitError_None)
 	{

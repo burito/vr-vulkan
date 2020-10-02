@@ -81,8 +81,8 @@ void main_end(void)
 
 
 // last digit of angle is x-fov, in radians
-vec4 position = {0.0, 0.0, 0.0, 0.0};
-vec4 angle = {0.0, 0.0, 0.0, M_PI*0.5};
+vec4 position = {{0.0, 0.0, 0.0, 0.0}};
+vec4 angle = {{0.0, 0.0, 0.0, M_PI*0.5}};
 
 
 void render(mat4x4 view, mat4x4 projection, struct MESH_UNIFORM_BUFFER *dest)

@@ -36,7 +36,7 @@ freely, subject to the following restrictions:
 #include "mesh.h"
 #include "vr.h"
 #include "fps_movement.h"
-
+#include "spacemouse.h"
 
 long long time_start = 0;
 
@@ -59,9 +59,9 @@ int main_init(int argc, char *argv[])
 		log_fatal("Vulkan Init: FAILED");
 		return 1;
 	}
-	
-//	vr_init();
 
+//	vr_init();
+	spacemouse_init();
 
 	log_info("Initialised : OK");
 	return 0;   // it worked!
@@ -70,6 +70,7 @@ int main_init(int argc, char *argv[])
 
 void main_end(void)
 {
+	spacemouse_shutdown();
 	if(vr_using)
 	{
 		vr_end();
@@ -102,6 +103,7 @@ void render(mat4x4 view, mat4x4 projection, struct MESH_UNIFORM_BUFFER *dest)
 
 void main_loop(void)
 {
+	spacemouse_tick();
 	if(keys[KEY_ESCAPE])
 	{
 		log_info("Shutdown on : Button press (ESC)");
@@ -144,4 +146,3 @@ void main_loop(void)
 	}
 
 }
-

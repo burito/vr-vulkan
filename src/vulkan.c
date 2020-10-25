@@ -586,8 +586,8 @@ void vk_pipeline(struct VULKAN_PIPELINE *vp, int reinit_pipeline)
 		};
 		VkDescriptorImageInfo desc_img_info = {
 			vk.sampler,		// VkSampler        sampler;
-			bunny->m[0].image->vk.imageview,	// VkImageView      imageView;
-			bunny->m[0].image->vk.image_layout	// VkImageLayout    imageLayout;
+			bunny->materials[0].image->vk.imageview,	// VkImageView      imageView;
+			bunny->materials[0].image->vk.image_layout	// VkImageLayout    imageLayout;
 		};
 
 		VkWriteDescriptorSet desc_write_set[] = {
@@ -862,9 +862,9 @@ int vulkan_init(void)
 	vulkan_instance_extension_strings[1] = VK_KHR_SURFACE_EXTENSION_NAME;
 
 
-	int layer_count = 1;
+	int layer_count = 0;
 	const char *layer_names[] = {
-		"VK_LAYER_LUNARG_standard_validation",
+//		"VK_LAYER_LUNARG_standard_validation",
 	};
 #ifdef __APPLE__
 	layer_count = 0;
@@ -2049,8 +2049,8 @@ void vulkan_vr_init(void)
 	};
 	VkDescriptorImageInfo desc_img_info = {
 		vk.sampler,		// VkSampler        sampler;
-		bunny->m[0].image->vk.imageview,	// VkImageView      imageView;
-		bunny->m[0].image->vk.image_layout	// VkImageLayout    imageLayout;
+		bunny->materials[0].image->vk.imageview,	// VkImageView      imageView;
+		bunny->materials[0].image->vk.image_layout	// VkImageLayout    imageLayout;
 	};
 
 	VkWriteDescriptorSet desc_write_set[] = {

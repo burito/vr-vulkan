@@ -17,7 +17,7 @@ layout (location = 0) out vec4 outColor;
 
 
 void main() {
-	vec4 color = texture(tex, inUV);
+	vec4 color = texture(tex, vec2(inUV.x, 1.0 - inUV.y));
 //	color = vec4(1);
 
 	vec3 N = (inNormal + vec3(1)) * 0.5;

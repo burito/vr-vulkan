@@ -45,11 +45,11 @@ libopenvr_api.so: deps/openvr/bin/linux64/libopenvr_api.so
 $(OUT_DIR)/vulkan.o: vulkan.c vert_spv.h frag_spv.h mesh_vert_spv.h mesh_frag_spv.h
 
 # build the shaders - nasty hack
-$(BUILD_DIR)/frag.spv : shader.frag
-	$(GLSLANG) -V -H $< -o $@ > $(BUILD_DIR)/frag_spv.h.txt
+$(BUILD_DIR)/frag.spv : fragment.shader
+	$(GLSLANG) -V -S frag -H $< -o $@ > $(BUILD_DIR)/frag_spv.h.txt
 
-$(BUILD_DIR)/vert.spv : shader.vert
-	$(GLSLANG) -V -H $< -o $@ > $(BUILD_DIR)/vert_spv.h.txt
+$(BUILD_DIR)/vert.spv : vertex.shader
+	$(GLSLANG) -V -S vert -H $< -o $@ > $(BUILD_DIR)/vert_spv.h.txt
 
 $(BUILD_DIR)/vert_spv.h : $(BUILD_DIR)/vert.spv
 	(cd $(BUILD_DIR) && xxd -i vert.spv > vert_spv.h)
@@ -58,11 +58,11 @@ $(BUILD_DIR)/frag_spv.h : $(BUILD_DIR)/frag.spv
 	(cd $(BUILD_DIR) && xxd -i frag.spv > frag_spv.h)
 
 # build the mesh shaders - nasty hack continues!
-$(BUILD_DIR)/mesh_frag.spv : mesh_shader.frag
-	$(GLSLANG) -V -H $< -o $@ > $(BUILD_DIR)/mesh_frag_spv.h.txt
+$(BUILD_DIR)/mesh_frag.spv : mesh_fragment.shader
+	$(GLSLANG) -V -S frag -H $< -o $@ > $(BUILD_DIR)/mesh_frag_spv.h.txt
 
-$(BUILD_DIR)/mesh_vert.spv : mesh_shader.vert
-	$(GLSLANG) -V -H $< -o $@ > $(BUILD_DIR)/mesh_vert_spv.h.txt
+$(BUILD_DIR)/mesh_vert.spv : mesh_vertex.shader
+	$(GLSLANG) -V -S vert -H $< -o $@ > $(BUILD_DIR)/mesh_vert_spv.h.txt
 
 $(BUILD_DIR)/mesh_vert_spv.h : mesh_vert.spv
 	(cd $(BUILD_DIR) && xxd -i mesh_vert.spv > mesh_vert_spv.h)

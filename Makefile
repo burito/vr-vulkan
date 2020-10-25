@@ -3,11 +3,11 @@ COMPANY = Daniel Burke
 COPYRIGHT = 2018-2019
 DESCRIPTION = OpenVR Vulkan Test
 BINARY_NAME = vr-vulkan
-OBJS = main.o version.o log.o global.o vr.o 3dmaths.o fast_atof.o \
-	vr_helper.o vulkan.o vulkan_helper.o text.o mesh.o image.o stb_image.o \
+OBJS = main.o version.o log.o global.o vr.o 3dmaths.o stb_ds.o \
+	vr_helper.o vulkan.o vulkan_helper.o text.o mesh.o mesh_vulkan.o stb_image.o \
 	fps_movement.o spacemouse.o
 CFLAGS = -std=c11 -Wall -isystem deps -Ideps/dpb/src -Ideps/dpb/deps/hidapi/hidapi
-VPATH = src deps deps/dpb/src deps/dpb/deps/hidapi/
+VPATH = src deps deps/dpb/src deps/dpb/deps deps/dpb/deps/hidapi/
 
 WIN_LIBS = c:/Windows/system32/vulkan-1.dll -luser32 -lwinmm -lgdi32 -lshell32
 # use this line with clang/msvc

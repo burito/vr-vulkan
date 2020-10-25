@@ -52,7 +52,7 @@ extern xcb_window_t window;
 #include "vulkan_helper.h"
 #include "vulkan.h"
 #include "3dmaths.h"
-#include "mesh.h"
+#include "mesh_vulkan.h"
 #include "global.h"
 
 #include "vert_spv.h"
@@ -90,7 +90,7 @@ VkColorSpaceKHR color_space = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
 
 struct MESH_UNIFORM_BUFFER ubo_eye_left, ubo_eye_right;
 
-WF_OBJ * bunny;
+struct MESH_VULKAN *bunny;
 struct VULKAN_HANDLES vk;
 
 int find_memory_type(VkMemoryRequirements requirements, VkMemoryPropertyFlags wanted)
@@ -187,7 +187,7 @@ VkResult vk_buffer(VkBufferUsageFlags usage, VkMemoryPropertyFlags flags, struct
 		log_fatal("vkCreateBuffer = %s", vulkan_result(result));
 		goto VK_CB_BUFFER;
 	}
-	
+
 	VkMemoryRequirements requirements;
 	vkGetBufferMemoryRequirements(vk.device, x->buffer, &requirements);
 	uint32_t memory_type = find_memory_type(requirements, flags);
@@ -456,7 +456,7 @@ VK_FB_FRAMEBUFFER:
 	vk_imagebuffer_end(&fb->depth);
 VK_FB_DEPTHBUFFER:
 	vk_imagebuffer_end(&fb->color);
-VK_FB_COLORBUFFER:	
+VK_FB_COLORBUFFER:
 	return result;
 }
 
@@ -586,8 +586,8 @@ void vk_pipeline(struct VULKAN_PIPELINE *vp, int reinit_pipeline)
 		};
 		VkDescriptorImageInfo desc_img_info = {
 			vk.sampler,		// VkSampler        sampler;
-			bunny->m[0].map_Kd->vk.imageview,	// VkImageView      imageView;
-			bunny->m[0].map_Kd->vk.image_layout	// VkImageLayout    imageLayout;
+			bunny->m[0].image->vk.imageview,	// VkImageView      imageView;
+			bunny->m[0].image->vk.image_layout	// VkImageLayout    imageLayout;
 		};
 
 		VkWriteDescriptorSet desc_write_set[] = {
@@ -666,7 +666,7 @@ void vk_pipeline(struct VULKAN_PIPELINE *vp, int reinit_pipeline)
 		NULL,								// const void*                                pNext;
 		0,								// VkPipelineInputAssemblyStateCreateFlags    flags;
 		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,				// VkPrimitiveTopology                        topology;
-		VK_FALSE							// VkBool32                                   primitiveRestartEnable;		
+		VK_FALSE							// VkBool32                                   primitiveRestartEnable;
 	};
 
 	VkViewport viewport = {0.0f,0.0f,(float)vid_width,(float)vid_height,0.0f,1.0f};
@@ -695,7 +695,7 @@ void vk_pipeline(struct VULKAN_PIPELINE *vp, int reinit_pipeline)
 		0.0f,								// float                                      depthBiasConstantFactor;
 		0.0f,								// float                                      depthBiasClamp;
 		0.0f,								// float                                      depthBiasSlopeFactor;
-		1.0f								// float                                      lineWidth;		
+		1.0f								// float                                      lineWidth;
 	};
 
 	VkSampleMask sample_mask = 0xFFFFFFFF;
@@ -993,7 +993,7 @@ int vulkan_init(void)
 			queuefamily_properties[i].queueFlags);
 //		vulkan_queueflags(queuefamily_properties[i].queueFlags);
 
-		VkQueueFlags wanted = 
+		VkQueueFlags wanted =
 			VK_QUEUE_GRAPHICS_BIT |
 			VK_QUEUE_COMPUTE_BIT |
 			VK_QUEUE_TRANSFER_BIT;
@@ -1070,7 +1070,7 @@ int vulkan_init(void)
 		log_warning("vkGetPhysicalDeviceSurfaceSupportKHR = %s", vulkan_result(result));
 	}
 	log_trace("vkGetPhysicalDeviceSurfaceSupportKHR(%d) = %s", vk.desired_queuefamily, present_supported?"VK_TRUE":"VK_FALSE");
-	
+
 	uint32_t surface_format_count = 0;
 	result = vkGetPhysicalDeviceSurfaceFormatsKHR(vk.physical_device, vk.surface, &surface_format_count, NULL);
 	if( result != VK_SUCCESS )
@@ -1355,7 +1355,7 @@ int vulkan_init(void)
 
 
 //	bunny = wf_load("data/models/bunny/bunny.obj");
-	bunny = wf_load("data/models/lpshead/head.OBJ");
+	bunny = mesh_load("data/models/lpshead/head.OBJ");
 
 	vk_pipeline_mesh(0);
 	vk_swapchain_init();
@@ -1418,7 +1418,7 @@ void vulkan_end(void)
 	}
 
 	vk_pipeline_end(&vk.mesh);
-	wf_free(bunny);
+	mesh_free(bunny);
 	vk_swapchain_end();
 
 	for(int i=0; i<vk.display_buffer_count; i++)
@@ -1721,7 +1721,7 @@ void vk_commandbuffers(void)
 		// fill the command buffer with commands
 		result = vkBeginCommandBuffer(vk.sc_commandbuffer[i], &vk_cmdbegin);
 		if( result != VK_SUCCESS ) { log_warning("vkBeginCommandBuffer = %s", vulkan_result(result)); }
-		
+
 		vkCmdCopyBuffer( vk.sc_commandbuffer[i], vk.mesh.ubo_host.buffer, vk.mesh.ubo_device.buffer, 1, &mesh_buffer_copy);
 
 		vkCmdPipelineBarrier(vk.sc_commandbuffer[i],
@@ -1738,7 +1738,7 @@ void vk_commandbuffers(void)
 		VkDeviceSize poffset = 0;
 		vkCmdBindVertexBuffers( vk.sc_commandbuffer[i], 0, 1, &bunny->vertex_buffer.buffer, &poffset );
 		vkCmdBindIndexBuffer( vk.sc_commandbuffer[i], bunny->index_buffer.buffer, 0, bunny->index_type );
-		vkCmdDrawIndexed( vk.sc_commandbuffer[i], bunny->nf*3, 1, 0, 0, 0);
+		vkCmdDrawIndexed( vk.sc_commandbuffer[i], bunny->wf->num_triangles*3, 1, 0, 0, 0);
 
 //		vkCmdDraw( vk.sc_commandbuffer[i], 4, 1, 0, 0 );
 
@@ -1855,7 +1855,7 @@ void vulkan_vr_init(void)
 		NULL,								// const void*                                pNext;
 		0,								// VkPipelineInputAssemblyStateCreateFlags    flags;
 		VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,				// VkPrimitiveTopology                        topology;
-		VK_FALSE							// VkBool32                                   primitiveRestartEnable;		
+		VK_FALSE							// VkBool32                                   primitiveRestartEnable;
 	};
 
 	VkViewport viewport = {0.0f,0.0f,(float)vk.vr.width,(float)vk.vr.height,0.0f,1.0f};
@@ -1884,7 +1884,7 @@ void vulkan_vr_init(void)
 		0.0f,								// float                                      depthBiasConstantFactor;
 		0.0f,								// float                                      depthBiasClamp;
 		0.0f,								// float                                      depthBiasSlopeFactor;
-		1.0f								// float                                      lineWidth;		
+		1.0f								// float                                      lineWidth;
 	};
 
 	VkSampleMask sample_mask = 0xFFFFFFFF;
@@ -2049,8 +2049,8 @@ void vulkan_vr_init(void)
 	};
 	VkDescriptorImageInfo desc_img_info = {
 		vk.sampler,		// VkSampler        sampler;
-		bunny->m[0].map_Kd->vk.imageview,	// VkImageView      imageView;
-		bunny->m[0].map_Kd->vk.image_layout	// VkImageLayout    imageLayout;
+		bunny->m[0].image->vk.imageview,	// VkImageView      imageView;
+		bunny->m[0].image->vk.image_layout	// VkImageLayout    imageLayout;
 	};
 
 	VkWriteDescriptorSet desc_write_set[] = {
@@ -2160,7 +2160,7 @@ void vk_commandbuffers_vr(struct VULKAN_FRAMEBUFFER *fb)
 		{ .color.float32 = { 0.2f, 0.0f, 0.0f, 1.0f} },
 		{ .depthStencil.depth = 1000.0f }
 	};
-	
+
 	VkRenderPassBeginInfo render_pass_begin_info = {
 		VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,	// VkStructureType        sType;
 		NULL,						// const void*            pNext;
@@ -2198,7 +2198,7 @@ void vk_commandbuffers_vr(struct VULKAN_FRAMEBUFFER *fb)
 	VkDeviceSize poffset = 0;
 	vkCmdBindVertexBuffers( vk.vr.commandbuffer, 0, 1, &bunny->vertex_buffer.buffer, &poffset );
 	vkCmdBindIndexBuffer( vk.vr.commandbuffer, bunny->index_buffer.buffer, 0, bunny->index_type );
-	vkCmdDrawIndexed( vk.vr.commandbuffer, bunny->nf*3, 1, 0, 0, 0);
+	vkCmdDrawIndexed( vk.vr.commandbuffer, bunny->wf->num_triangles*3, 1, 0, 0, 0);
 
 //		vkCmdDraw( fb->commandbuffer, 4, 1, 0, 0 );
 
@@ -2267,7 +2267,7 @@ void vulkan_resize(void)
 		log_warning("vkGetPhysicalDeviceSurfaceSupportKHR = %s", vulkan_result(result));
 	}
 //	log_info("vkGetPhysicalDeviceSurfaceSupportKHR(%d) = %s", vk.desired_queuefamily, present_supported?"VK_TRUE":"VK_FALSE");
-	
+
 	vk_swapchain_init();
 
 	vk_pipeline_mesh( 1);

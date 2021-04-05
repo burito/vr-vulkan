@@ -1,6 +1,6 @@
 [submodule "deps/Vulkan-Headers"]
 	path = deps/Vulkan-Headers
-	url = git@github.comKhronosGroup/Vulkan-Headers
+	url = git@github.com:KhronosGroup/Vulkan-Headers
 [submodule "deps/MoltenVK"]
 	path = deps/MoltenVK
 	url = git@github.com:KhronosGroup/MoltenVK
